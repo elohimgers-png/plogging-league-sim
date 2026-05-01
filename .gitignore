@@ -1,0 +1,9 @@
+venv/
+venv311/
+venv312/
+venv39/
+venv_plogging/
+Miniforge3.sh
+streamlit_standalone.py
+__pycache__/
+*.pyc
