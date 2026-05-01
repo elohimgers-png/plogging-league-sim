@@ -1,4 +1,3 @@
-# app.py
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -10,9 +9,83 @@ import random
 
 # ==================== CONFIGURATION ====================
 st.set_page_config(page_title="Plogging League Simulator", layout="wide")
-st.title("🏃‍♂️ Plogging League Simulator")
+st.title("  Plogging League Simulator")
 st.markdown("**A living simulation. Adjust sliders and watch the city transform.**")
 
+# ==================== SIDEBAR WITH ABOUT & INSTRUCTIONS ====================
+with st.sidebar:
+    st.image("https://img.icons8.com/color/96/plogging.png", width=80)  # Optional logo
+    st.title("📖 About the Dashboard")
+    
+    with st.expander("🎯 What is Plogging League Simulator?"):
+        st.markdown("""
+        The **Plogging League Simulator** is an interactive game-like simulation where teams compete to collect litter while jogging.
+        
+        **Plogging** = Jogging + picking up litter (from Swedish *plocka upp*).
+        
+        Teams earn points for collecting litter, and their motivation affects performance. Rain slows down collection, while team boosts amplify efforts.
+        """)
+    
+    with st.expander("🎮 How to Use the App"):
+        st.markdown("""
+        **1. Adjust Controls (Left Panel)**  
+        - **Litter spawn rate** – How fast new litter appears on the map  
+        - **Logger motivation** – Affects how much litter each plogger collects  
+        - **Team boost multiplier** – Temporary power-up for selected team  
+        - **Simulation speed** – Slows down or speeds up the simulation  
+        - **Rain** – Reduces collection activity by 50%  
+        - **Trigger League Challenge** – Starts a competitive event between teams
+        
+        **2. Monitor Live Metrics**  
+        - **Active Ploggers** – Currently active team members  
+        - **Total Litter on Map** – Uncollected litter remaining  
+        - **Litter Collected Ever** – Total cumulative collections
+        
+        **3. Explore Map Views**  
+        Use the tabs to see litter distribution and team territories.
+        """)
+    
+    with st.expander("🏆 Teams & Scoring"):
+        st.markdown("""
+        | Team | Color | Special Ability |
+        |------|-------|-----------------|
+        | 🏞️ Park Rangers | Red | Balanced collectors |
+        | 🌊 Ocean Defenders | Teal | Efficient in wet conditions |
+        | ☀️ Solar Striders | Yellow | Bonus in clear weather |
+        | 🌿 Green Guardians | Green | Boosted by team multiplier |
+        
+        **Scoring System:**  
+        - Each litter collected = 1 point for the team  
+        - League challenges give bonus points to winning teams  
+        - Higher motivation = faster collection rate
+        """)
+    
+    with st.expander("❓ Frequently Asked Questions"):
+        st.markdown("""
+        **Q: Why aren't my ploggers moving?**  
+        A: Check simulation speed – set it higher than 0. Also ensure litter exists on the map.
+        
+        **Q: How do I win?**  
+        A: Collect as much litter as possible! Trigger League Challenges to earn bonus points.
+        
+        **Q: What does rain do?**  
+        A: Rain reduces collection efficiency by 50% for all teams.
+        
+        **Q: Can I reset the simulation?**  
+        A: Refresh the page or adjust sliders to change parameters.
+        """)
+    
+    with st.expander("📞 Support & Feedback"):
+        st.markdown("""
+        **Developer:** Gerson Fumbuka  
+        **Contact:** [Your Email / GitHub]  
+        **Report issues:** [GitHub Issues](https://github.com/elohimgers-png/plogging-league-sim/issues)
+        
+        ---
+        *Version 1.0 | Last updated: May 2026*
+        """)
+    
+    st.caption("👈 Use the sliders above to control the simulation")
 # ==================== DATA CLASSES ====================
 TEAMS = [
     {"name": "Park Rangers", "color": "#ff6b6b"},
@@ -106,25 +179,25 @@ if "zones" not in st.session_state:
 
 # ==================== SIDEBAR CONTROLS ====================
 with st.sidebar:
-    st.header("🎛️ Controls")
+    st.header("  Controls")
     spawn_rate = st.slider("Litter spawn rate (per zone/hour)", 1.0, 15.0, 5.0, 0.5)
     motivation = st.slider("Plogger motivation", 20, 100, 70, 5) / 100.0
     team_boost = st.slider("Team boost multiplier", 1.0, 3.0, 1.5, 0.1)
     speed = st.slider("Simulation speed", 1, 10, 3)
 
-    rain = st.checkbox("🌧️ Rain (activity ×0.5)")
+    rain = st.checkbox("  Rain (activity ×0.5)")
     st.session_state.rain = rain
 
-    if st.button("🏆 Trigger League Challenge"):
+    if st.button("  Trigger League Challenge"):
         st.session_state.challenge_active = True
         st.session_state.challenge_timer = 200 # frames
         for p in st.session_state.ploggers:
             p.motivation = min(1.0, p.motivation + 0.25)
 
-    st.header("📊 Live Metrics")
+    st.header("  Live Metrics")
     metric_placeholder = st.empty()
 
-    st.header("🏅 Team Leaderboard")
+    st.header("  Team Leaderboard")
     lb_placeholder = st.empty()
 
 # ==================== MAIN DISPLAY ====================
@@ -261,7 +334,7 @@ def update_simulation(spawn_rate, motivation, team_boost, speed):
         del litter[0]
 
 # ==================== RUN LOOP ====================
-run_sim = st.sidebar.checkbox("▶️ Run Simulation", value=True)
+run_sim = st.sidebar.checkbox("  Run Simulation", value=True)
 
 if run_sim:
     for _ in range(speed):
@@ -350,14 +423,14 @@ fig.update_layout(
 if rain:
     fig.add_annotation(
         x=250, y=380,
-        text="🌧️ RAINING",
+        text="  RAINING",
         showarrow=False,
         font=dict(size=20, color="rgba(100,150,255,0.6)"),
     )
 if st.session_state.challenge_active:
     fig.add_annotation(
         x=250, y=30,
-        text=f"🏆 LEAGUE CHALLENGE ({team_boost}×)",
+        text=f"  LEAGUE CHALLENGE ({team_boost}×)",
         showarrow=False,
         font=dict(size=16, color="gold"),
     )
@@ -368,4 +441,5 @@ map_placeholder.plotly_chart(fig, use_container_width=True)
 if run_sim:
     time.sleep(0.2)
     st.rerun()
+
 
