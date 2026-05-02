@@ -8,7 +8,28 @@ from typing import List
 import random
 
 # ==================== CONFIGURATION ====================
-st.set_page_config(page_title="Plogging League Simulator", layout="wide")
+st.set_page_config(page_title="Plogging League Simulator", layout="wide") 
+# ==================== SIDEBAR ====================
+with st.sidebar:
+    st.image("logo.png", width=80)
+    st.title("📖 About the Dashboard")
+    
+    with st.expander("🎯 What is this?"):
+        st.markdown("""
+        **Plogging League Simulator** – Teams compete to collect litter while jogging.
+        
+        Adjust the controls on the left and watch the simulation run!
+        """)
+    
+    with st.expander("🎮 How to Use"):
+        st.markdown("""
+        - **Litter spawn rate** – Controls new litter appearance
+        - **Logger motivation** – Affects collection speed
+        - **Rain** – Slows down collection by 50%
+        - **Trigger League Challenge** – Start a team competition
+        """)
+    
+    st.caption("👈 Adjust controls to begin")
 st.title("  Plogging League Simulator")
 st.markdown("**A living simulation. Adjust sliders and watch the city transform.**")
 
