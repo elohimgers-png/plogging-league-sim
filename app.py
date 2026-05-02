@@ -97,14 +97,17 @@ with st.sidebar:
         """)
     
     with st.expander("📞 Support & Feedback"):
-        st.markdown("""
-        **Developer:** Gerson Fumbuka  
-        **Contact:** [Your Email / GitHub]  
-        **Report issues:** [GitHub Issues](https://github.com/elohimgers-png/plogging-league-sim/issues)
-        
-        ---
-        *Version 1.0 | Last updated: May 2026*
-        """)
+    st.markdown("""
+    **Developer:** Gerson Japhet Fumbuka  
+    **DBA Scholar at INTI International University and Colleges**  
+    **Nilai, Malaysia**  
+    **Contact:** ephatatalithacumi@gmail.com  
+    **GitHub:** [elohimgers-png](https://github.com/elohimgers-png)  
+    **Report issues:** [GitHub Issues](https://github.com/elohimgers-png/plogging-league-sim/issues)
+    
+    ---
+    *Version 1.0 | Last updated: May 2026*
+    """)
     
     st.caption("👈 Use the sliders above to control the simulation")
 # ==================== DATA CLASSES ====================
