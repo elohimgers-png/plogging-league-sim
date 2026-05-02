@@ -21,12 +21,77 @@ with st.sidebar:
         Adjust the controls on the left and watch the simulation run!
         """)
     
-    with st.expander("🎮 How to Use"):
+    with st.expander("🎮 How to Use (Easy Guide)"):
         st.markdown("""
-        - **Litter spawn rate** – Controls new litter appearance
-        - **Logger motivation** – Affects collection speed
-        - **Rain** – Slows down collection by 50%
-        - **Trigger League Challenge** – Start a team competition
+        ### 🎯 Quick Start (30 seconds)
+    
+        1. **Press the play button** ▶️ on the map to start the simulation
+    
+        2. **Watch the teams** collect litter from the city
+    
+        3. **See numbers change** in the Live Metrics box
+    
+        ---
+    
+        ### 🎮 Game Controls (Left Sidebar)
+    
+        | Control | What it does | Try this! |
+        |---------|--------------|------------|
+        | **Litter spawn rate** | More litter appears faster | Slide to the right → lots of litter! |
+        | **Logger motivation** | How hard teams work | Set to 50 → super fast collection |
+        | **Team boost multiplier** | Give one team extra power | Set to 2 → team works twice as fast |
+        | **Simulation speed** | How fast time moves | 1x = normal, 5x = super fast |
+        | **Rain (activity ×0.5)** | Makes everything slower | Turn ON → collection 50% slower |
+    
+        ---
+    
+        ### 🏆 Special Feature: League Challenge
+    
+        **Click the "Trigger League Challenge" button** to start a competition!
+    
+        - All teams race to collect the most litter
+        - The winning team gets **bonus points**
+        - Happens instantly - you'll see the score jump!
+    
+        ---
+    
+        ### 📊 Understanding the Numbers
+    
+        | Number | What it means |
+        |--------|---------------|
+        | **Active Ploggers** | How many team members are working right now |
+        | **Total Litter on Map** | How much trash is still lying around |
+        | **Litter Collected Ever** | Your total score (bigger = better!) |
+    
+        ---
+    
+        ### 🗺️ Map Tabs (Click to explore)
+    
+        - **Litter** → See where trash is (red = lots of litter)
+        - **Park Rangers** → Where the red team collects
+        - **Ocean Defenders** → Where the blue team collects
+        - **Solar Striders** → Where the yellow team collects
+        - **Green Guardians** → Where the green team collects
+    
+        ---
+    
+        ### 💡 Pro Tips for High Scores
+    
+        1. **Start with:** Litter spawn = 2, Motivation = 30, Speed = 2x
+        2. **Hit the League Challenge** every 10 seconds
+        3. **Turn OFF rain** (it slows you down)
+        4. **Boost your best team** with the multiplier
+        5. **Watch the map** to see where litter is piling up
+    
+        ---
+    
+        ### ❓ Something not working?
+    
+        - **Ploggers not moving?** → Increase simulation speed
+        - **No litter on map?** → Increase litter spawn rate
+        - **Scores too low?** → Trigger more League Challenges
+    
+        **Have fun cleaning up the city! 🏃‍♂️🗑️🌍**
         """)
     
     st.caption("👈 Adjust controls to begin")
