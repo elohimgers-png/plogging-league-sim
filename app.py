@@ -342,3 +342,18 @@ st.pyplot(fig)
 if run_sim:
     time.sleep(0.2)
     st.rerun()
+
+# ═══════════════════════════════════════════════════════════
+# AI PLOGGER VIDEO (runs only on first load, not in loop)
+# ═══════════════════════════════════════════════════════════
+if not run_sim:
+    st.divider()
+    st.subheader("🎬 AI Plogger in Action")
+    st.caption("Watch our AI plogger jogging, spotting litter, and cleaning the city!")
+    try:
+        video_file = open("plogging_ai_video.mp4", "rb")
+        video_bytes = video_file.read()
+        st.video(video_bytes)
+        video_file.close()
+    except FileNotFoundError:
+        st.info("📹 AI plogger video is being generated... Run `python ai_plogger_video.py` locally to create it.")
