@@ -1,359 +1,121 @@
-# app.py - Plogging League Simulator (Segfault-Proof 2.5D View)
-import streamlit as st
-import pandas as pd
+cat > ai_plogger_video_moviepy.py << 'ENDOFSCRIPT'
 import numpy as np
-import time
-import random
-import math
+from moviepy import VideoClip
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from matplotlib.patches import Polygon, RegularPolygon
-from matplotlib.collections import PatchCollection
-import io
+from matplotlib.patches import Circle, Rectangle
+import random, math, io
+from PIL import Image
 
-# ═══════════════════════════════════════════════════════════
-# PAGE CONFIG
-# ═══════════════════════════════════════════════════════════
-st.set_page_config(page_title="Plogging League Sim", layout="wide")
-st.title("🏃‍♂️ Plogging League Simulator")
-st.caption("Hex tiles rise as litter piles up · sink as cleaned")
+FPS, DURATION = 30, 30
+OUTPUT = "plogging_ai_video.mp4"
+SKY, GRASS, PATH_COLOR = '#87CEEB', '#4CAF50', '#D2B48C'
+SKIN, SHIRT, SHORTS, SHOE, BAG, GLOVE = '#FFCD94', '#009688', '#282828', '#323232', '#006400', '#FFC800'
+LITTER_COLORS = ['#FF0000', '#FFA500', '#C0C0C0', '#00BFFF', '#FFFF00']
 
-# ═══════════════════════════════════════════════════════════
-# DATA
-# ═══════════════════════════════════════════════════════════
-TEAMS = [
-    {"name": "Park Rangers", "color": "#ff6b6b"},
-    {"name": "Ocean Defenders", "color": "#4ecdc4"},
-    {"name": "Solar Striders", "color": "#ffe66d"},
-    {"name": "Green Guardians", "color": "#a29bfe"},
-]
+class PloggerAnimation:
+    def __init__(self):
+        self.px, self.pose, self.timer = -2, 'running', 0
+        self.stats = {'distance': 0, 'collected': 0, 'points': 0}
+        self.litter = [{'x': random.uniform(2,18), 'y_offset': random.uniform(-0.3,0.3),
+                        'type': random.choice(['bottle','can','wrapper']),
+                        'color': random.choice(LITTER_COLORS), 'collected': False, 'spotted': False} for _ in range(15)]
 
-ZONE_NAMES = [
-    "Downtown", "Riverside Park", "Old Town", "Harbour District",
-    "University Area", "Suburbia North", "Industrial Zone", "Market Square",
-    "Botanical Gardens", "Coastal Path", "City Centre", "East Village"
-]
+    def update(self):
+        if self.pose == 'running':
+            self.px += 0.1; self.stats['distance'] += 0.003
+            for i in self.litter:
+                if not i['collected'] and abs(self.px - i['x']) < 1.0:
+                    i['spotted'] = True; self.pose = 'spotting'; self.timer = 12; break
+        elif self.pose == 'spotting':
+            self.timer -= 1; self.px += 0.03
+            if self.timer <= 0: self.pose = 'bending'; self.timer = 18
+        elif self.pose == 'bending':
+            self.timer -= 1
+            if self.timer <= 0: self.pose = 'picking'; self.timer = 8
+        elif self.pose == 'picking':
+            self.timer -= 1
+            if self.timer <= 0:
+                for i in self.litter:
+                    if i['spotted'] and not i['collected'] and abs(self.px - i['x']) < 1.5:
+                        i['collected'] = True; i['spotted'] = False
+                        self.stats['collected'] += 1; self.stats['points'] += 10; break
+                self.pose = 'running'
+        if self.px > 20: self.px = -2
 
-# ═══════════════════════════════════════════════════════════
-# SIMULATION STATE
-# ═══════════════════════════════════════════════════════════
-if "zones" not in st.session_state:
-    zones = []
-    num_x, num_y = 5, 4
-    for iy in range(num_y):
-        for ix in range(num_x):
-            idx = ix + iy * num_x
-            zones.append({
-                "id": idx,
-                "name": ZONE_NAMES[idx % len(ZONE_NAMES)],
-                "x_center": ix * 100 + 50,
-                "y_center": iy * 100 + 50,
-                "litter": 0,
-                "max_litter": 50
-            })
-    st.session_state.zones = zones
+    def path_y(self, x, t): return 2.5 + 0.5 * math.sin(x * 2 + t * 2)
 
-    ploggers = []
-    for i in range(60):
-        z = random.choice(zones)
-        ploggers.append({
-            "id": i,
-            "team": random.choice(TEAMS),
-            "x": z["x_center"] + random.uniform(-40, 40),
-            "y": z["y_center"] + random.uniform(-40, 40),
-            "motivation": random.uniform(0.4, 0.9),
-            "fitness": random.uniform(0.4, 1.0),
-            "points": random.randint(0, 200),
-            "state": "idle",
-            "target_zone_id": None,
-            "collect_timer": 0,
-            "idle_timer": random.randint(0, 50),
-            "session_items": 0
-        })
-    st.session_state.ploggers = ploggers
-
-    st.session_state.litter_items = []
-    st.session_state.sim_day = 0
-    st.session_state.sim_hour = 0
-    st.session_state.total_collected = 0
-    st.session_state.total_cp = 0
-    st.session_state.rain = False
-    st.session_state.challenge_active = False
-    st.session_state.challenge_timer = 0
-    st.session_state.frame = 0
-
-    for _ in range(200):
-        z = random.choice(zones)
-        x = z["x_center"] + random.uniform(-45, 45)
-        y = z["y_center"] + random.uniform(-45, 45)
-        st.session_state.litter_items.append((x, y))
-        z["litter"] += 1
-
-# ═══════════════════════════════════════════════════════════
-# SIDEBAR
-# ═══════════════════════════════════════════════════════════
-with st.sidebar:
-    st.header("🎛️ Controls")
-    spawn_rate = st.slider("Litter spawn rate", 1.0, 15.0, 5.0, 0.5)
-    motivation = st.slider("Plogger motivation", 20, 100, 70, 5) / 100.0
-    team_boost = st.slider("Team boost multiplier", 1.0, 3.0, 1.5, 0.1)
-    speed = st.slider("Sim speed", 1, 10, 3)
-
-    rain = st.checkbox("🌧️ Rain (×0.5 activity)")
-    st.session_state.rain = rain
-
-    if st.button("🏆 Trigger League Challenge"):
-        st.session_state.challenge_active = True
-        st.session_state.challenge_timer = 200
-        for p in st.session_state.ploggers:
-            p["motivation"] = min(1.0, p["motivation"] + 0.25)
-
-    st.header("📊 Live Metrics")
-    metric_placeholder = st.empty()
-
-    st.header("🏅 Team Leaderboard")
-    lb_placeholder = st.empty()
-
-# ═══════════════════════════════════════════════════════════
-# UPDATE SIMULATION (unchanged logic)
-# ═══════════════════════════════════════════════════════════
-def update_simulation(spawn_rate, motivation, team_boost, speed):
-    zones = st.session_state.zones
-    ploggers = st.session_state.ploggers
-    litter = st.session_state.litter_items
-    rain = st.session_state.rain
-    challenge = st.session_state.challenge_active
-
-    st.session_state.frame += 1
-    if st.session_state.frame % max(1, int(200 / speed)) == 0:
-        st.session_state.sim_hour += 1
-        if st.session_state.sim_hour >= 24:
-            st.session_state.sim_hour = 0
-            st.session_state.sim_day += 1
-        for z in zones:
-            for _ in range(int(spawn_rate)):
-                x = z["x_center"] + random.uniform(-45, 45)
-                y = z["y_center"] + random.uniform(-45, 45)
-                litter.append((x, y))
-                z["litter"] = min(z["litter"] + 1, z["max_litter"])
-
-    if challenge:
-        st.session_state.challenge_timer -= speed
-        if st.session_state.challenge_timer <= 0:
-            st.session_state.challenge_active = False
-
-    for p in ploggers:
-        zx = int(p["x"] // 100)
-        zy = int(p["y"] // 100)
-        zone_idx = zy * 5 + zx if 0 <= zx < 5 and 0 <= zy < 4 else None
-        current_zone = zones[zone_idx] if zone_idx is not None and zone_idx < len(zones) else None
-
-        if p["state"] == "idle":
-            p["idle_timer"] -= speed
-            if p["idle_timer"] <= 0:
-                weather_factor = 0.5 if rain else 1.0
-                challenge_factor = team_boost if challenge else 1.0
-                zone_factor = 1.0
-                if current_zone:
-                    zone_factor = 1 + (1 - (100 * (1 - current_zone["litter"]/50)) / 100) * 2
-                prob = p["motivation"] * weather_factor * challenge_factor * zone_factor * 0.02 * speed
-                if random.random() < prob:
-                    target = None
-                    best_score = -1
-                    for z in zones:
-                        dist = np.hypot(z["x_center"] - p["x"], z["y_center"] - p["y"]) + 1
-                        score = z["litter"] / dist
-                        if score > best_score:
-                            best_score = score
-                            target = z
-                    if target:
-                        p["state"] = "moving"
-                        p["target_zone_id"] = target["id"]
-                        p["session_items"] = 0
-                p["idle_timer"] = random.randint(30, 150)
-
-        elif p["state"] == "moving":
-            if p["target_zone_id"] is not None:
-                target = zones[p["target_zone_id"]]
-                dx = target["x_center"] - p["x"]
-                dy = target["y_center"] - p["y"]
-                dist = np.hypot(dx, dy)
-                if dist < 5:
-                    p["state"] = "collecting"
-                    p["collect_timer"] = random.randint(10, 30)
+    def draw(self, t):
+        self.update()
+        fig, ax = plt.subplots(figsize=(12.8, 7.2), dpi=100, facecolor=SKY)
+        ax.set_xlim(0, 20); ax.set_ylim(0, 10); ax.axis('off')
+        ax.fill_between([0,20], 0, 3.5, color=GRASS)
+        ax.fill_between([0,20], 0, 2.8, color='#66BB6A')
+        px_arr = np.linspace(0, 20, 500)
+        py_arr = self.path_y(px_arr, t)
+        ax.fill_between(px_arr, py_arr - 0.6, py_arr + 0.6, color=PATH_COLOR, alpha=0.8)
+        for tx in [2,5,8,12,16]:
+            ax.add_patch(Rectangle((tx-0.15, 5.5), 0.3, 1.8, color='#654321'))
+            ax.add_patch(Circle((tx, 6.8), 0.7, color='#228B22', ec='#1a6b1a', lw=1))
+        ax.add_patch(Circle((16, 8.5), 0.6, color='#FFE082', alpha=0.9))
+        for item in self.litter:
+            if not item['collected']:
+                lx, ly = item['x'], self.path_y(item['x'], t) + 0.5 + item['y_offset']
+                if item['type'] == 'bottle':
+                    ax.add_patch(Rectangle((lx-0.1, ly), 0.2, 0.4, color=item['color'], ec='white', lw=0.5))
+                    ax.add_patch(Circle((lx, ly+0.4), 0.05, color=item['color']))
+                elif item['type'] == 'can':
+                    ax.add_patch(Rectangle((lx-0.08, ly), 0.16, 0.3, color=item['color'], ec='white', lw=0.5))
                 else:
-                    step = p["fitness"] * 2 * speed
-                    p["x"] += (dx / dist) * step
-                    p["y"] += (dy / dist) * step
-            else:
-                p["state"] = "idle"
-            for i in range(len(litter) - 1, -1, -1):
-                lx, ly = litter[i]
-                if np.hypot(p["x"] - lx, p["y"] - ly) < 10:
-                    zx = int(lx // 100)
-                    zy = int(ly // 100)
-                    zi = zy * 5 + zx
-                    if 0 <= zi < len(zones):
-                        zones[zi]["litter"] = max(0, zones[zi]["litter"] - 1)
-                    del litter[i]
-                    p["session_items"] += 1
-                    st.session_state.total_collected += 1
-                    p["points"] += 10 * (team_boost if challenge else 1)
-                    st.session_state.total_cp += 10 * (team_boost if challenge else 1)
+                    ax.add_patch(Rectangle((lx-0.18, ly), 0.36, 0.12, color=item['color'], ec='white', lw=0.5, angle=20))
+        py = self.path_y(self.px, t) + 1.2
+        self.draw_plogger(ax, self.px, py, self.pose, t)
+        ax.text(0.5, 9.5, 'PLOGGING LEAGUE', fontsize=20, fontweight='bold', color='#004D40', bbox=dict(boxstyle='round', facecolor='white', alpha=0.85))
+        ax.text(0.5, 8.8, f"Dist: {self.stats['distance']:.2f} km | Collected: {self.stats['collected']} | CP: {self.stats['points']} | Time: {int(t)}s", fontsize=11, color='#333', bbox=dict(boxstyle='round', facecolor='white', alpha=0.75))
+        buf = io.BytesIO()
+        fig.savefig(buf, format='png', dpi=100, bbox_inches='tight', pad_inches=0)
+        plt.close(fig)
+        buf.seek(0)
+        return np.array(Image.open(buf))
 
-        elif p["state"] == "collecting":
-            p["collect_timer"] -= speed
-            for i in range(len(litter) - 1, -1, -1):
-                lx, ly = litter[i]
-                if np.hypot(p["x"] - lx, p["y"] - ly) < 12:
-                    zx = int(lx // 100)
-                    zy = int(ly // 100)
-                    zi = zy * 5 + zx
-                    if 0 <= zi < len(zones):
-                        zones[zi]["litter"] = max(0, zones[zi]["litter"] - 1)
-                    del litter[i]
-                    p["session_items"] += 1
-                    st.session_state.total_collected += 1
-                    p["points"] += 10 * (team_boost if challenge else 1)
-                    st.session_state.total_cp += 10 * (team_boost if challenge else 1)
-            if p["collect_timer"] <= 0:
-                p["state"] = "idle"
-                p["idle_timer"] = random.randint(20, 100)
-                if p["session_items"] >= 5:
-                    p["motivation"] = min(1.0, p["motivation"] + 0.02)
-                else:
-                    p["motivation"] = max(0.1, p["motivation"] - 0.005)
+    def draw_plogger(self, ax, x, y, pose, t):
+        if pose == 'running':
+            s = 0.25 * math.sin(t*18)
+            ax.plot([x,x-0.12],[y,y-0.5+s],color=SHORTS,lw=6,solid_capstyle='round')
+            ax.plot([x-0.12,x-0.18+s],[y-0.5+s,y-0.85],color=SHOE,lw=5,solid_capstyle='round')
+            ax.plot([x,x+0.12],[y,y-0.5-s],color=SHORTS,lw=6,solid_capstyle='round')
+            ax.plot([x+0.12,x+0.18-s],[y-0.5-s,y-0.85],color=SHOE,lw=5,solid_capstyle='round')
+            ax.plot([x,x],[y-0.15,y+0.2],color=SHIRT,lw=10,solid_capstyle='round')
+            ax.add_patch(Circle((x,y+0.35),0.2,color=SKIN,ec='#d4a574',lw=1))
+            ax.plot(x+0.08,y+0.38,'o',color='black',markersize=3)
+            ax.plot(x+0.15,y+0.38,'o',color='black',markersize=3)
+            ax.add_patch(Rectangle((x-0.15,y+0.45),0.3,0.08,color='#0064C8',angle=3))
+        elif pose == 'spotting':
+            ax.plot([x,x-0.1],[y,y-0.5],color=SHORTS,lw=6)
+            ax.plot([x-0.1,x-0.13],[y-0.5,y-0.85],color=SHOE,lw=5)
+            ax.plot([x,x+0.1],[y,y-0.5],color=SHORTS,lw=6)
+            ax.plot([x+0.1,x+0.13],[y-0.5,y-0.85],color=SHOE,lw=5)
+            ax.plot([x,x],[y-0.15,y+0.2],color=SHIRT,lw=10)
+            ax.plot([x,x+0.25],[y+0.1,y+0.28],color=SKIN,lw=5)
+            ax.add_patch(Circle((x,y+0.35),0.2,color=SKIN,ec='#d4a574',lw=1))
+            ax.plot(x+0.1,y+0.38,'o',color='black',markersize=3)
+        elif pose in ('bending','picking'):
+            ax.plot([x,x],[y-0.1,y+0.3],color=SHIRT,lw=10)
+            ax.plot([x,x-0.1],[y-0.1,y-0.5],color=SHORTS,lw=6)
+            ax.plot([x-0.1,x-0.13],[y-0.5,y-0.8],color=SHOE,lw=5)
+            ax.plot([x,x+0.1],[y-0.1,y-0.5],color=SHORTS,lw=6)
+            ax.plot([x+0.1,x+0.13],[y-0.5,y-0.8],color=SHOE,lw=5)
+            ax.plot([x,x+0.18],[y+0.3,y+0.5],color=SKIN,lw=5)
+            ax.plot([x+0.18,x+0.23],[y+0.5,y+0.58],color=GLOVE,lw=5)
+            ax.add_patch(Circle((x+0.08,y+0.45),0.17,color=SKIN,ec='#d4a574',lw=1))
+            if pose == 'picking': ax.add_patch(Circle((x+0.23,y+0.58),0.18,color='yellow',alpha=0.35))
 
-        p["x"] = max(0, min(500, p["x"]))
-        p["y"] = max(0, min(400, p["y"]))
+def make_frame(t): return anim.draw(t)
 
-    while len(litter) > 800:
-        del litter[0]
-
-# ═══════════════════════════════════════════════════════════
-# RUN SIMULATION
-# ═══════════════════════════════════════════════════════════
-run_sim = st.sidebar.checkbox("▶️ Run Simulation", value=True)
-if run_sim:
-    for _ in range(speed):
-        update_simulation(spawn_rate, motivation, team_boost, speed)
-
-# ═══════════════════════════════════════════════════════════
-# METRICS & LEADERBOARD
-# ═══════════════════════════════════════════════════════════
-active_count = sum(1 for p in st.session_state.ploggers if p["state"] != "idle")
-total_litter = sum(z["litter"] for z in st.session_state.zones)
-avg_clean = np.mean([100 * (1 - z["litter"]/z["max_litter"]) for z in st.session_state.zones])
-metric_placeholder.markdown(f"""
-- **Active Ploggers:** {active_count}
-- **Total Litter:** {total_litter}
-- **Total Collected:** {st.session_state.total_collected}
-- **CP in Circulation:** {st.session_state.total_cp}
-- **City Clean Score:** {avg_clean:.1f}%
-- **Day:** {st.session_state.sim_day} · Hour: {st.session_state.sim_hour}
-""")
-
-teams_pts = {t["name"]: 0 for t in TEAMS}
-for p in st.session_state.ploggers:
-    teams_pts[p["team"]["name"]] += p["points"]
-sorted_teams = sorted(teams_pts.items(), key=lambda x: x[1], reverse=True)
-lb_placeholder.table(pd.DataFrame(sorted_teams, columns=["Team", "Points"]).set_index("Team"))
-
-# ═══════════════════════════════════════════════════════════
-# 2.5D HEX VIEW (No Plotly WebGL → No Segfault)
-# ═══════════════════════════════════════════════════════════
-st.subheader("🗺️ Hex Tile City View")
-
-# We'll use matplotlib to draw isometric-style hexagons with size proportional to litter
-fig, ax = plt.subplots(figsize=(10, 7), facecolor='#0a0e14')
-ax.set_facecolor('#0a0e14')
-ax.set_xlim(-20, 520)
-ax.set_ylim(-20, 420)
-ax.set_aspect('equal')
-ax.axis('off')
-
-height_scale = 4.0  # how much hex radius grows with litter
-base_radius = 30
-
-for zone in st.session_state.zones:
-    litter = zone["litter"]
-    # Radius grows with litter, shrinks as cleaned
-    radius = base_radius + litter * height_scale
-    radius = max(base_radius * 0.6, min(80, radius))  # clamp
-
-    # Color: green (clean) → red (dirty)
-    clean_ratio = 1 - litter / zone["max_litter"]
-    r = 1.0 - clean_ratio
-    g = clean_ratio * 0.8
-    b = clean_ratio * 0.4
-    face_color = (r, g, b)
-    edge_color = 'white' if radius > base_radius + 20 else '#555555'
-    line_width = 1.5 if radius > base_radius + 20 else 0.8
-
-    # Draw hexagon
-    hex_patch = RegularPolygon(
-        (zone["x_center"], zone["y_center"]),
-        numVertices=6,
-        radius=radius,
-        orientation=0,
-        facecolor=face_color,
-        edgecolor=edge_color,
-        linewidth=line_width,
-        alpha=0.85
-    )
-    ax.add_patch(hex_patch)
-
-    # Zone name label
-    if radius > base_radius + 10:
-        ax.text(zone["x_center"], zone["y_center"],
-                zone["name"], fontsize=6, ha='center', va='center',
-                color='white', fontweight='bold', alpha=0.9)
-    # Clean score
-    ax.text(zone["x_center"], zone["y_center"] - radius - 6,
-            f"{100*(1-litter/zone['max_litter']):.0f}%", fontsize=5,
-            ha='center', va='center', color='#aaaaaa', alpha=0.7)
-
-# Ploggers as small dots
-for p in st.session_state.ploggers:
-    ax.plot(p["x"], p["y"], 'o', color=p["team"]["color"],
-            markersize=5, alpha=0.9, markeredgecolor='white', markeredgewidth=0.5)
-
-# Litter as tiny grey dots
-if st.session_state.litter_items:
-    litter_x = [l[0] for l in st.session_state.litter_items]
-    litter_y = [l[1] for l in st.session_state.litter_items]
-    ax.plot(litter_x, litter_y, '.', color='#888888', markersize=1, alpha=0.6)
-
-# Rain overlay
-if st.session_state.rain:
-    ax.text(250, 390, '🌧️ RAINING', fontsize=14, ha='center', alpha=0.5, color='#7799cc')
-
-# Challenge banner
-if st.session_state.challenge_active:
-    ax.text(250, 10, f'🏆 LEAGUE CHALLENGE ACTIVE ({team_boost}×)', fontsize=10,
-            ha='center', color='gold', fontweight='bold',
-            bbox=dict(boxstyle='round,pad=0.3', facecolor='black', alpha=0.6))
-
-# Title
-ax.text(250, 405, 'PLOGGING LEAGUE SIM', fontsize=7, ha='center', color='#444444', alpha=0.5)
-
-st.pyplot(fig)
-
-# Auto-refresh
-if run_sim:
-    time.sleep(0.2)
-    st.rerun()
-
-# ═══════════════════════════════════════════════════════════
-# AI PLOGGER VIDEO (runs only on first load, not in loop)
-# ═══════════════════════════════════════════════════════════
-if not run_sim:
-    st.divider()
-    st.subheader("🎬 AI Plogger in Action")
-    st.caption("Watch our AI plogger jogging, spotting litter, and cleaning the city!")
-    try:
-        video_file = open("plogging_ai_video.mp4", "rb")
-        video_bytes = video_file.read()
-        st.video(video_bytes)
-        video_file.close()
-    except FileNotFoundError:
-        st.info("📹 AI plogger video is being generated... Run `python ai_plogger_video.py` locally to create it.")
+anim = PloggerAnimation()
+print("Generating Plogging AI Video...")
+clip = VideoClip(make_frame, duration=DURATION)
+clip.write_videofile(OUTPUT, fps=FPS, codec='libx264', bitrate='2000k', verbose=False, logger=None)
+print(f"Done! {OUTPUT}")
+ENDOFSCRIPT
