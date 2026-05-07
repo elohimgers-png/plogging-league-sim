@@ -1,181 +1,25 @@
+# app.py - Plogging League Simulator (Segfault-Proof 2.5D View)
 import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly.graph_objects as go
 import time
-from dataclasses import dataclass, field
-from typing import List
 import random
+import math
+import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon, RegularPolygon
+from matplotlib.collections import PatchCollection
+import io
 
-# ==================== CONFIGURATION ====================
-st.set_page_config(page_title="Plogging League Simulator", layout="wide") 
-# ==================== SIDEBAR ====================
-with st.sidebar:
-    st.image("logo.png", width=80)
-    st.title("📖 About the Dashboard")
-    
-    with st.expander("🎯 What is this?"):
-        st.markdown("""
-        **Plogging League Simulator** – Teams compete to collect litter while jogging.
-        
-        Adjust the controls on the left and watch the simulation run!
-        """)
-    
-    with st.expander("🎮 How to Use (Easy Guide)"):
-        st.markdown("""
-        ### 🎯 Quick Start (30 seconds)
-    
-        1. **Press the play button** ▶️ on the map to start the simulation
-    
-        2. **Watch the teams** collect litter from the city
-    
-        3. **See numbers change** in the Live Metrics box
-    
-        ---
-    
-        ### 🎮 Game Controls (Left Sidebar)
-    
-        | Control | What it does | Try this! |
-        |---------|--------------|------------|
-        | **Litter spawn rate** | More litter appears faster | Slide to the right → lots of litter! |
-        | **Logger motivation** | How hard teams work | Set to 50 → super fast collection |
-        | **Team boost multiplier** | Give one team extra power | Set to 2 → team works twice as fast |
-        | **Simulation speed** | How fast time moves | 1x = normal, 5x = super fast |
-        | **Rain (activity ×0.5)** | Makes everything slower | Turn ON → collection 50% slower |
-    
-        ---
-    
-        ### 🏆 Special Feature: League Challenge
-    
-        **Click the "Trigger League Challenge" button** to start a competition!
-    
-        - All teams race to collect the most litter
-        - The winning team gets **bonus points**
-        - Happens instantly - you'll see the score jump!
-    
-        ---
-    
-        ### 📊 Understanding the Numbers
-    
-        | Number | What it means |
-        |--------|---------------|
-        | **Active Ploggers** | How many team members are working right now |
-        | **Total Litter on Map** | How much trash is still lying around |
-        | **Litter Collected Ever** | Your total score (bigger = better!) |
-    
-        ---
-    
-        ### 🗺️ Map Tabs (Click to explore)
-    
-        - **Litter** → See where trash is (red = lots of litter)
-        - **Park Rangers** → Where the red team collects
-        - **Ocean Defenders** → Where the blue team collects
-        - **Solar Striders** → Where the yellow team collects
-        - **Green Guardians** → Where the green team collects
-    
-        ---
-    
-        ### 💡 Pro Tips for High Scores
-    
-        1. **Start with:** Litter spawn = 2, Motivation = 30, Speed = 2x
-        2. **Hit the League Challenge** every 10 seconds
-        3. **Turn OFF rain** (it slows you down)
-        4. **Boost your best team** with the multiplier
-        5. **Watch the map** to see where litter is piling up
-    
-        ---
-    
-        ### ❓ Something not working?
-    
-        - **Ploggers not moving?** → Increase simulation speed
-        - **No litter on map?** → Increase litter spawn rate
-        - **Scores too low?** → Trigger more League Challenges
-    
-        **Have fun cleaning up the city! 🏃‍♂️🗑️🌍**
-        """)
-    
-    st.caption("👈 Adjust controls to begin")
-st.title("  Plogging League Simulator")
-st.markdown("**A living simulation. Adjust sliders and watch the city transform.**")
+# ═══════════════════════════════════════════════════════════
+# PAGE CONFIG
+# ═══════════════════════════════════════════════════════════
+st.set_page_config(page_title="Plogging League Sim", layout="wide")
+st.title("🏃‍♂️ Plogging League Simulator")
+st.caption("Hex tiles rise as litter piles up · sink as cleaned")
 
-# ==================== SIDEBAR WITH ABOUT & INSTRUCTIONS ====================
-with st.sidebar:
-    st.image("https://img.icons8.com/color/96/plogging.png", width=80)  # Optional logo
-    st.title("📖 About the Dashboard")
-    
-    with st.expander("🎯 What is Plogging League Simulator?"):
-        st.markdown("""
-        The **Plogging League Simulator** is an interactive game-like simulation where teams compete to collect litter while jogging.
-        
-        **Plogging** = Jogging + picking up litter (from Swedish *plocka upp*).
-        
-        Teams earn points for collecting litter, and their motivation affects performance. Rain slows down collection, while team boosts amplify efforts.
-        """)
-    
-    with st.expander("🎮 How to Use the App"):
-        st.markdown("""
-        **1. Adjust Controls (Left Panel)**  
-        - **Litter spawn rate** – How fast new litter appears on the map  
-        - **Logger motivation** – Affects how much litter each plogger collects  
-        - **Team boost multiplier** – Temporary power-up for selected team  
-        - **Simulation speed** – Slows down or speeds up the simulation  
-        - **Rain** – Reduces collection activity by 50%  
-        - **Trigger League Challenge** – Starts a competitive event between teams
-        
-        **2. Monitor Live Metrics**  
-        - **Active Ploggers** – Currently active team members  
-        - **Total Litter on Map** – Uncollected litter remaining  
-        - **Litter Collected Ever** – Total cumulative collections
-        
-        **3. Explore Map Views**  
-        Use the tabs to see litter distribution and team territories.
-        """)
-    
-    with st.expander("🏆 Teams & Scoring"):
-        st.markdown("""
-        | Team | Color | Special Ability |
-        |------|-------|-----------------|
-        | 🏞️ Park Rangers | Red | Balanced collectors |
-        | 🌊 Ocean Defenders | Teal | Efficient in wet conditions |
-        | ☀️ Solar Striders | Yellow | Bonus in clear weather |
-        | 🌿 Green Guardians | Green | Boosted by team multiplier |
-        
-        **Scoring System:**  
-        - Each litter collected = 1 point for the team  
-        - League challenges give bonus points to winning teams  
-        - Higher motivation = faster collection rate
-        """)
-    
-    with st.expander("❓ Frequently Asked Questions"):
-        st.markdown("""
-        **Q: Why aren't my ploggers moving?**  
-        A: Check simulation speed – set it higher than 0. Also ensure litter exists on the map.
-        
-        **Q: How do I win?**  
-        A: Collect as much litter as possible! Trigger League Challenges to earn bonus points.
-        
-        **Q: What does rain do?**  
-        A: Rain reduces collection efficiency by 50% for all teams.
-        
-        **Q: Can I reset the simulation?**  
-        A: Refresh the page or adjust sliders to change parameters.
-        """)
-    
-    with st.expander("📞 Support & Feedback"):
-        st.markdown("""
-        **Developer:** Gerson Japhet Fumbuka  
-        **DBA Scholar at INTI International University and Colleges**  
-        **Nilai, Malaysia**  
-        **Contact:** ephatatalithacumi@gmail.com  
-        **GitHub:** [elohimgers-png](https://github.com/elohimgers-png)  
-        **Report issues:** [GitHub Issues](https://github.com/elohimgers-png/plogging-league-sim/issues)
-    
-        ---
-        *Version 1.0 | Last updated: May 2026*
-        """)
-    
-    st.caption("👈 Use the sliders above to control the simulation")
-# ==================== DATA CLASSES ====================
+# ═══════════════════════════════════════════════════════════
+# DATA
+# ═══════════════════════════════════════════════════════════
 TEAMS = [
     {"name": "Park Rangers", "color": "#ff6b6b"},
     {"name": "Ocean Defenders", "color": "#4ecdc4"},
@@ -183,73 +27,51 @@ TEAMS = [
     {"name": "Green Guardians", "color": "#a29bfe"},
 ]
 
-@dataclass
-class Zone:
-    id: int
-    name: str
-    x_center: float
-    y_center: float
-    litter: int = 0
-    max_litter: int = 50
+ZONE_NAMES = [
+    "Downtown", "Riverside Park", "Old Town", "Harbour District",
+    "University Area", "Suburbia North", "Industrial Zone", "Market Square",
+    "Botanical Gardens", "Coastal Path", "City Centre", "East Village"
+]
 
-    @property
-    def clean_score(self):
-        return max(0, 100 * (1 - self.litter / self.max_litter))
-
-@dataclass
-class Plogger:
-    id: int
-    team: dict
-    x: float
-    y: float
-    motivation: float
-    fitness: float
-    points: int = 0
-    state: str = "idle" # idle, moving, collecting
-    target_zone_id: int = None
-    collect_timer: int = 0
-    idle_timer: int = 0
-    session_items: int = 0
-
-# ==================== SIMULATION STATE ====================
+# ═══════════════════════════════════════════════════════════
+# SIMULATION STATE
+# ═══════════════════════════════════════════════════════════
 if "zones" not in st.session_state:
-    # Create 5x4 grid of zones (matching the HTML prototype)
-    num_x, num_y = 5, 4
     zones = []
-    zone_id = 0
-    zone_names = [
-        "Downtown", "Riverside Park", "Old Town", "Harbour District",
-        "University Area", "Suburbia North", "Industrial Zone", "Market Square",
-        "Botanical Gardens", "Coastal Path", "City Centre", "East Village"
-    ]
+    num_x, num_y = 5, 4
     for iy in range(num_y):
         for ix in range(num_x):
-            zones.append(Zone(
-                id=zone_id,
-                name=zone_names[zone_id % len(zone_names)],
-                x_center=ix * 100 + 50,
-                y_center=iy * 100 + 50
-            ))
-            zone_id += 1
+            idx = ix + iy * num_x
+            zones.append({
+                "id": idx,
+                "name": ZONE_NAMES[idx % len(ZONE_NAMES)],
+                "x_center": ix * 100 + 50,
+                "y_center": iy * 100 + 50,
+                "litter": 0,
+                "max_litter": 50
+            })
     st.session_state.zones = zones
 
-    # Create ploggers
     ploggers = []
     for i in range(60):
-        team = random.choice(TEAMS)
-        zone = random.choice(zones)
-        ploggers.append(Plogger(
-            id=i,
-            team=team,
-            x=zone.x_center + random.uniform(-40, 40),
-            y=zone.y_center + random.uniform(-40, 40),
-            motivation=random.uniform(0.4, 0.9),
-            fitness=random.uniform(0.4, 1.0),
-            points=random.randint(0, 200),
-            idle_timer=random.randint(0, 50)
-        ))
+        z = random.choice(zones)
+        ploggers.append({
+            "id": i,
+            "team": random.choice(TEAMS),
+            "x": z["x_center"] + random.uniform(-40, 40),
+            "y": z["y_center"] + random.uniform(-40, 40),
+            "motivation": random.uniform(0.4, 0.9),
+            "fitness": random.uniform(0.4, 1.0),
+            "points": random.randint(0, 200),
+            "state": "idle",
+            "target_zone_id": None,
+            "collect_timer": 0,
+            "idle_timer": random.randint(0, 50),
+            "session_items": 0
+        })
     st.session_state.ploggers = ploggers
-    st.session_state.litter_items = [] # list of (x,y)
+
+    st.session_state.litter_items = []
     st.session_state.sim_day = 0
     st.session_state.sim_hour = 0
     st.session_state.total_collected = 0
@@ -258,277 +80,265 @@ if "zones" not in st.session_state:
     st.session_state.challenge_active = False
     st.session_state.challenge_timer = 0
     st.session_state.frame = 0
-    # Random initial litter
+
     for _ in range(200):
         z = random.choice(zones)
-        x = z.x_center + random.uniform(-45, 45)
-        y = z.y_center + random.uniform(-45, 45)
+        x = z["x_center"] + random.uniform(-45, 45)
+        y = z["y_center"] + random.uniform(-45, 45)
         st.session_state.litter_items.append((x, y))
-        z.litter += 1
+        z["litter"] += 1
 
-# ==================== SIDEBAR CONTROLS ====================
+# ═══════════════════════════════════════════════════════════
+# SIDEBAR
+# ═══════════════════════════════════════════════════════════
 with st.sidebar:
-    st.header("  Controls")
-    spawn_rate = st.slider("Litter spawn rate (per zone/hour)", 1.0, 15.0, 5.0, 0.5)
+    st.header("🎛️ Controls")
+    spawn_rate = st.slider("Litter spawn rate", 1.0, 15.0, 5.0, 0.5)
     motivation = st.slider("Plogger motivation", 20, 100, 70, 5) / 100.0
     team_boost = st.slider("Team boost multiplier", 1.0, 3.0, 1.5, 0.1)
-    speed = st.slider("Simulation speed", 1, 10, 3)
+    speed = st.slider("Sim speed", 1, 10, 3)
 
-    rain = st.checkbox("  Rain (activity ×0.5)")
+    rain = st.checkbox("🌧️ Rain (×0.5 activity)")
     st.session_state.rain = rain
 
-    if st.button("  Trigger League Challenge"):
+    if st.button("🏆 Trigger League Challenge"):
         st.session_state.challenge_active = True
-        st.session_state.challenge_timer = 200 # frames
+        st.session_state.challenge_timer = 200
         for p in st.session_state.ploggers:
-            p.motivation = min(1.0, p.motivation + 0.25)
+            p["motivation"] = min(1.0, p["motivation"] + 0.25)
 
-    st.header("  Live Metrics")
+    st.header("📊 Live Metrics")
     metric_placeholder = st.empty()
 
-    st.header("  Team Leaderboard")
+    st.header("🏅 Team Leaderboard")
     lb_placeholder = st.empty()
 
-# ==================== MAIN DISPLAY ====================
-map_placeholder = st.empty()
-
-# ==================== UPDATE FUNCTION ====================
+# ═══════════════════════════════════════════════════════════
+# UPDATE SIMULATION (unchanged logic)
+# ═══════════════════════════════════════════════════════════
 def update_simulation(spawn_rate, motivation, team_boost, speed):
     zones = st.session_state.zones
     ploggers = st.session_state.ploggers
     litter = st.session_state.litter_items
     rain = st.session_state.rain
     challenge = st.session_state.challenge_active
-    challenge_timer = st.session_state.challenge_timer
 
-    # Hourly litter spawn
     st.session_state.frame += 1
     if st.session_state.frame % max(1, int(200 / speed)) == 0:
         st.session_state.sim_hour += 1
         if st.session_state.sim_hour >= 24:
             st.session_state.sim_hour = 0
             st.session_state.sim_day += 1
-        # Spawn litter
-        for _ in range(int(spawn_rate * len(zones))):
-            z = random.choice(zones)
-            x = z.x_center + random.uniform(-45, 45)
-            y = z.y_center + random.uniform(-45, 45)
-            litter.append((x, y))
-            z.litter = min(z.litter + 1, z.max_litter)
+        for z in zones:
+            for _ in range(int(spawn_rate)):
+                x = z["x_center"] + random.uniform(-45, 45)
+                y = z["y_center"] + random.uniform(-45, 45)
+                litter.append((x, y))
+                z["litter"] = min(z["litter"] + 1, z["max_litter"])
 
-    # Decay challenge
-    if challenge and challenge_timer > 0:
+    if challenge:
         st.session_state.challenge_timer -= speed
         if st.session_state.challenge_timer <= 0:
             st.session_state.challenge_active = False
-    elif challenge and challenge_timer <= 0:
-        st.session_state.challenge_active = False
 
-    # Update ploggers
     for p in ploggers:
-        # Find current zone
-        zx = int(p.x // 100)
-        zy = int(p.y // 100)
+        zx = int(p["x"] // 100)
+        zy = int(p["y"] // 100)
         zone_idx = zy * 5 + zx if 0 <= zx < 5 and 0 <= zy < 4 else None
         current_zone = zones[zone_idx] if zone_idx is not None and zone_idx < len(zones) else None
 
-        if p.state == "idle":
-            p.idle_timer -= speed
-            if p.idle_timer <= 0:
-                # decide to plog
+        if p["state"] == "idle":
+            p["idle_timer"] -= speed
+            if p["idle_timer"] <= 0:
                 weather_factor = 0.5 if rain else 1.0
                 challenge_factor = team_boost if challenge else 1.0
                 zone_factor = 1.0
                 if current_zone:
-                    zone_factor = 1 + (1 - current_zone.clean_score / 100) * 2
-                prob = p.motivation * weather_factor * challenge_factor * zone_factor * 0.02 * speed
+                    zone_factor = 1 + (1 - (100 * (1 - current_zone["litter"]/50)) / 100) * 2
+                prob = p["motivation"] * weather_factor * challenge_factor * zone_factor * 0.02 * speed
                 if random.random() < prob:
-                    # find litter-heavy zone nearby
                     target = None
                     best_score = -1
                     for z in zones:
-                        dist = np.hypot(z.x_center - p.x, z.y_center - p.y) + 1
-                        score = z.litter / dist
+                        dist = np.hypot(z["x_center"] - p["x"], z["y_center"] - p["y"]) + 1
+                        score = z["litter"] / dist
                         if score > best_score:
                             best_score = score
                             target = z
                     if target:
-                        p.state = "moving"
-                        p.target_zone_id = target.id
-                        p.session_items = 0
-                p.idle_timer = random.randint(30, 150)
+                        p["state"] = "moving"
+                        p["target_zone_id"] = target["id"]
+                        p["session_items"] = 0
+                p["idle_timer"] = random.randint(30, 150)
 
-        elif p.state == "moving":
-            if p.target_zone_id is not None:
-                target = zones[p.target_zone_id]
-                dx = target.x_center - p.x
-                dy = target.y_center - p.y
+        elif p["state"] == "moving":
+            if p["target_zone_id"] is not None:
+                target = zones[p["target_zone_id"]]
+                dx = target["x_center"] - p["x"]
+                dy = target["y_center"] - p["y"]
                 dist = np.hypot(dx, dy)
                 if dist < 5:
-                    p.state = "collecting"
-                    p.collect_timer = random.randint(10, 30)
+                    p["state"] = "collecting"
+                    p["collect_timer"] = random.randint(10, 30)
                 else:
-                    step = p.fitness * 2 * speed
-                    p.x += (dx / dist) * step
-                    p.y += (dy / dist) * step
+                    step = p["fitness"] * 2 * speed
+                    p["x"] += (dx / dist) * step
+                    p["y"] += (dy / dist) * step
             else:
-                p.state = "idle"
-
-            # Collect nearby litter while moving
+                p["state"] = "idle"
             for i in range(len(litter) - 1, -1, -1):
                 lx, ly = litter[i]
-                if np.hypot(p.x - lx, p.y - ly) < 10:
-                    # find zone of litter
+                if np.hypot(p["x"] - lx, p["y"] - ly) < 10:
                     zx = int(lx // 100)
                     zy = int(ly // 100)
                     zi = zy * 5 + zx
                     if 0 <= zi < len(zones):
-                        zones[zi].litter = max(0, zones[zi].litter - 1)
+                        zones[zi]["litter"] = max(0, zones[zi]["litter"] - 1)
                     del litter[i]
-                    p.session_items += 1
+                    p["session_items"] += 1
                     st.session_state.total_collected += 1
-                    p.points += 10 * (team_boost if challenge else 1)
+                    p["points"] += 10 * (team_boost if challenge else 1)
                     st.session_state.total_cp += 10 * (team_boost if challenge else 1)
 
-        elif p.state == "collecting":
-            p.collect_timer -= speed
-            # Collect nearby litter
+        elif p["state"] == "collecting":
+            p["collect_timer"] -= speed
             for i in range(len(litter) - 1, -1, -1):
                 lx, ly = litter[i]
-                if np.hypot(p.x - lx, p.y - ly) < 12:
+                if np.hypot(p["x"] - lx, p["y"] - ly) < 12:
                     zx = int(lx // 100)
                     zy = int(ly // 100)
                     zi = zy * 5 + zx
                     if 0 <= zi < len(zones):
-                        zones[zi].litter = max(0, zones[zi].litter - 1)
+                        zones[zi]["litter"] = max(0, zones[zi]["litter"] - 1)
                     del litter[i]
-                    p.session_items += 1
+                    p["session_items"] += 1
                     st.session_state.total_collected += 1
-                    p.points += 10 * (team_boost if challenge else 1)
+                    p["points"] += 10 * (team_boost if challenge else 1)
                     st.session_state.total_cp += 10 * (team_boost if challenge else 1)
-
-            if p.collect_timer <= 0:
-                p.state = "idle"
-                p.idle_timer = random.randint(20, 100)
-                if p.session_items >= 5:
-                    p.motivation = min(1.0, p.motivation + 0.02)
+            if p["collect_timer"] <= 0:
+                p["state"] = "idle"
+                p["idle_timer"] = random.randint(20, 100)
+                if p["session_items"] >= 5:
+                    p["motivation"] = min(1.0, p["motivation"] + 0.02)
                 else:
-                    p.motivation = max(0.1, p.motivation - 0.005)
-        # Keep inside 0-500,0-400
-        p.x = max(0, min(500, p.x))
-        p.y = max(0, min(400, p.y))
+                    p["motivation"] = max(0.1, p["motivation"] - 0.005)
 
-    # Cap litter list
+        p["x"] = max(0, min(500, p["x"]))
+        p["y"] = max(0, min(400, p["y"]))
+
     while len(litter) > 800:
         del litter[0]
 
-# ==================== RUN LOOP ====================
-run_sim = st.sidebar.checkbox("  Run Simulation", value=True)
-
+# ═══════════════════════════════════════════════════════════
+# RUN SIMULATION
+# ═══════════════════════════════════════════════════════════
+run_sim = st.sidebar.checkbox("▶️ Run Simulation", value=True)
 if run_sim:
     for _ in range(speed):
         update_simulation(spawn_rate, motivation, team_boost, speed)
 
-# ==================== RENDER METRICS ====================
-active = sum(1 for p in st.session_state.ploggers if p.state != "idle")
-total_litter = sum(z.litter for z in st.session_state.zones)
-avg_clean = np.mean([z.clean_score for z in st.session_state.zones])
-
+# ═══════════════════════════════════════════════════════════
+# METRICS & LEADERBOARD
+# ═══════════════════════════════════════════════════════════
+active_count = sum(1 for p in st.session_state.ploggers if p["state"] != "idle")
+total_litter = sum(z["litter"] for z in st.session_state.zones)
+avg_clean = np.mean([100 * (1 - z["litter"]/z["max_litter"]) for z in st.session_state.zones])
 metric_placeholder.markdown(f"""
-- **Active Ploggers:** {active}
-- **Total Litter on Map:** {total_litter}
-- **Litter Collected Ever:** {st.session_state.total_collected}
+- **Active Ploggers:** {active_count}
+- **Total Litter:** {total_litter}
+- **Total Collected:** {st.session_state.total_collected}
 - **CP in Circulation:** {st.session_state.total_cp}
 - **City Clean Score:** {avg_clean:.1f}%
 - **Day:** {st.session_state.sim_day} · Hour: {st.session_state.sim_hour}
 """)
 
-# Team leaderboard
 teams_pts = {t["name"]: 0 for t in TEAMS}
 for p in st.session_state.ploggers:
-    teams_pts[p.team["name"]] += p.points
+    teams_pts[p["team"]["name"]] += p["points"]
 sorted_teams = sorted(teams_pts.items(), key=lambda x: x[1], reverse=True)
-lb_df = pd.DataFrame(sorted_teams, columns=["Team", "Points"])
-lb_placeholder.table(lb_df.set_index("Team"))
+lb_placeholder.table(pd.DataFrame(sorted_teams, columns=["Team", "Points"]).set_index("Team"))
 
-# ==================== MAP VISUALIZATION ====================
-# Create a Plotly figure with zones, litter, ploggers
-fig = go.Figure()
+# ═══════════════════════════════════════════════════════════
+# 2.5D HEX VIEW (No Plotly WebGL → No Segfault)
+# ═══════════════════════════════════════════════════════════
+st.subheader("🗺️ Hex Tile City View")
 
-# Draw zones as rectangles
-for z in st.session_state.zones:
-    col = z.clean_score / 100
-    r, g, b = int(30 + (1 - col) * 180), int(50 + col * 160), int(60 + col * 80)
-    fig.add_shape(
-        type="rect",
-        x0=z.x_center - 45, y0=z.y_center - 45,
-        x1=z.x_center + 45, y1=z.y_center + 45,
-        line=dict(color=f"rgb({r},{g},{b})", width=1),
-        fillcolor=f"rgba({r},{g},{b},0.25)",
+# We'll use matplotlib to draw isometric-style hexagons with size proportional to litter
+fig, ax = plt.subplots(figsize=(10, 7), facecolor='#0a0e14')
+ax.set_facecolor('#0a0e14')
+ax.set_xlim(-20, 520)
+ax.set_ylim(-20, 420)
+ax.set_aspect('equal')
+ax.axis('off')
+
+height_scale = 4.0  # how much hex radius grows with litter
+base_radius = 30
+
+for zone in st.session_state.zones:
+    litter = zone["litter"]
+    # Radius grows with litter, shrinks as cleaned
+    radius = base_radius + litter * height_scale
+    radius = max(base_radius * 0.6, min(80, radius))  # clamp
+
+    # Color: green (clean) → red (dirty)
+    clean_ratio = 1 - litter / zone["max_litter"]
+    r = 1.0 - clean_ratio
+    g = clean_ratio * 0.8
+    b = clean_ratio * 0.4
+    face_color = (r, g, b)
+    edge_color = 'white' if radius > base_radius + 20 else '#555555'
+    line_width = 1.5 if radius > base_radius + 20 else 0.8
+
+    # Draw hexagon
+    hex_patch = RegularPolygon(
+        (zone["x_center"], zone["y_center"]),
+        numVertices=6,
+        radius=radius,
+        orientation=0,
+        facecolor=face_color,
+        edgecolor=edge_color,
+        linewidth=line_width,
+        alpha=0.85
     )
-    # Show clean score
-    fig.add_annotation(
-        x=z.x_center, y=z.y_center,
-        text=f"{z.clean_score:.0f}%",
-        showarrow=False,
-        font=dict(size=10, color="white"),
-    )
+    ax.add_patch(hex_patch)
 
-# Litter points
+    # Zone name label
+    if radius > base_radius + 10:
+        ax.text(zone["x_center"], zone["y_center"],
+                zone["name"], fontsize=6, ha='center', va='center',
+                color='white', fontweight='bold', alpha=0.9)
+    # Clean score
+    ax.text(zone["x_center"], zone["y_center"] - radius - 6,
+            f"{100*(1-litter/zone['max_litter']):.0f}%", fontsize=5,
+            ha='center', va='center', color='#aaaaaa', alpha=0.7)
+
+# Ploggers as small dots
+for p in st.session_state.ploggers:
+    ax.plot(p["x"], p["y"], 'o', color=p["team"]["color"],
+            markersize=5, alpha=0.9, markeredgecolor='white', markeredgewidth=0.5)
+
+# Litter as tiny grey dots
 if st.session_state.litter_items:
     litter_x = [l[0] for l in st.session_state.litter_items]
     litter_y = [l[1] for l in st.session_state.litter_items]
-    fig.add_trace(go.Scatter(
-        x=litter_x, y=litter_y,
-        mode="markers",
-        marker=dict(size=3, color="lightgray", opacity=0.7),
-        name="Litter"
-    ))
+    ax.plot(litter_x, litter_y, '.', color='#888888', markersize=1, alpha=0.6)
 
-# Ploggers points (with team color)
-for team in TEAMS:
-    team_ploggers = [p for p in st.session_state.ploggers if p.team["name"] == team["name"]]
-    if team_ploggers:
-        xs = [p.x for p in team_ploggers]
-        ys = [p.y for p in team_ploggers]
-        fig.add_trace(go.Scatter(
-            x=xs, y=ys,
-            mode="markers",
-            marker=dict(size=8, color=team["color"], line=dict(width=1, color="white")),
-            name=team["name"]
-        ))
+# Rain overlay
+if st.session_state.rain:
+    ax.text(250, 390, '🌧️ RAINING', fontsize=14, ha='center', alpha=0.5, color='#7799cc')
 
-fig.update_layout(
-    xaxis=dict(range=[0, 500], showgrid=False, zeroline=False, visible=False),
-    yaxis=dict(range=[0, 400], showgrid=False, zeroline=False, visible=False),
-    plot_bgcolor="rgba(10,14,20,1)",
-    paper_bgcolor="rgba(10,14,20,1)",
-    margin=dict(l=0, r=0, t=10, b=0),
-    height=450,
-    showlegend=True,
-    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(color="white"))
-)
-# Rain overlay text
-if rain:
-    fig.add_annotation(
-        x=250, y=380,
-        text="  RAINING",
-        showarrow=False,
-        font=dict(size=20, color="rgba(100,150,255,0.6)"),
-    )
+# Challenge banner
 if st.session_state.challenge_active:
-    fig.add_annotation(
-        x=250, y=30,
-        text=f"  LEAGUE CHALLENGE ({team_boost}×)",
-        showarrow=False,
-        font=dict(size=16, color="gold"),
-    )
+    ax.text(250, 10, f'🏆 LEAGUE CHALLENGE ACTIVE ({team_boost}×)', fontsize=10,
+            ha='center', color='gold', fontweight='bold',
+            bbox=dict(boxstyle='round,pad=0.3', facecolor='black', alpha=0.6))
 
-map_placeholder.plotly_chart(fig, use_container_width=True)
+# Title
+ax.text(250, 405, 'PLOGGING LEAGUE SIM', fontsize=7, ha='center', color='#444444', alpha=0.5)
 
-# Auto-rerun to keep animation alive
+st.pyplot(fig)
+
+# Auto-refresh
 if run_sim:
     time.sleep(0.2)
     st.rerun()
-
-
