@@ -427,7 +427,7 @@ if not run_sim:
             with open(rp, "rb") as f:
                 st.download_button("💾 Download PDF Report", f, os_mod.path.basename(rp), "application/pdf")
         except Exception as e:
-            st.error(f"Could not generate report: {e}")═══════════════════════════════════════════════════════════
+            st.error(f"Could not generate report: {e}")
 # AUTO-REFRESH
 # ═══════════════════════════════════════════════════════════
 if run_sim:
