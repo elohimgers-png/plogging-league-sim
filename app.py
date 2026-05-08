@@ -351,7 +351,7 @@ if not run_sim:
     st.subheader("🎬 AI Plogger in Action")
     st.caption("Watch our AI plogger jogging, spotting litter, and cleaning the city!")
     try:
-        video_file = open("plogging_ai_video.mp4", "rb")
+        video_file = open("plogging_ai_multi_sound.mov", "rb")
         video_bytes = video_file.read()
         st.video(video_bytes)
         video_file.close()
@@ -386,7 +386,7 @@ if not run_sim:
     st.subheader("🎬 AI Plogger in Action")
     st.caption("Watch our AI plogger jogging, spotting litter, and cleaning the city!")
     try:
-        video_file = open("plogging_ai_video.mp4", "rb")
+        video_file = open("plogging_ai_multi_sound.mov", "rb")
         video_bytes = video_file.read()
         st.video(video_bytes)
         video_file.close()
