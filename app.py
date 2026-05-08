@@ -1,4 +1,4 @@
-# app.py - Plogging League Simulator (Segfault-Proof 2.5D View)
+# app.py - Plogging League Simulator (Cloud-Ready + Multi-Plogger Video + Impact Report)
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -6,10 +6,8 @@ import time
 import random
 import math
 import matplotlib.pyplot as plt
-from matplotlib.patches import Polygon, RegularPolygon
-from matplotlib.collections import PatchCollection
-import io
-
+from matplotlib.patches import RegularPolygon
+import database as db
 # ═══════════════════════════════════════════════════════════
 # PAGE CONFIG
 # ═══════════════════════════════════════════════════════════
@@ -18,7 +16,7 @@ st.title("🏃‍♂️ Plogging League Simulator")
 st.caption("Hex tiles rise as litter piles up · sink as cleaned")
 
 # ═══════════════════════════════════════════════════════════
-# DATA
+# TEAM DATA
 # ═══════════════════════════════════════════════════════════
 TEAMS = [
     {"name": "Red Rangers", "color": "#ff0000"},
@@ -89,7 +87,7 @@ if "zones" not in st.session_state:
         z["litter"] += 1
 
 # ═══════════════════════════════════════════════════════════
-# SIDEBAR
+# SIDEBAR CONTROLS
 # ═══════════════════════════════════════════════════════════
 with st.sidebar:
     st.header("🎛️ Controls")
@@ -114,7 +112,7 @@ with st.sidebar:
     lb_placeholder = st.empty()
 
 # ═══════════════════════════════════════════════════════════
-# UPDATE SIMULATION (unchanged logic)
+# UPDATE SIMULATION
 # ═══════════════════════════════════════════════════════════
 def update_simulation(spawn_rate, motivation, team_boost, speed):
     zones = st.session_state.zones
@@ -259,11 +257,10 @@ sorted_teams = sorted(teams_pts.items(), key=lambda x: x[1], reverse=True)
 lb_placeholder.table(pd.DataFrame(sorted_teams, columns=["Team", "Points"]).set_index("Team"))
 
 # ═══════════════════════════════════════════════════════════
-# 2.5D HEX VIEW (No Plotly WebGL → No Segfault)
+# 2.5D HEX VIEW
 # ═══════════════════════════════════════════════════════════
 st.subheader("🗺️ Hex Tile City View")
 
-# We'll use matplotlib to draw isometric-style hexagons with size proportional to litter
 fig, ax = plt.subplots(figsize=(10, 7), facecolor='#0a0e14')
 ax.set_facecolor('#0a0e14')
 ax.set_xlim(-20, 520)
@@ -271,16 +268,14 @@ ax.set_ylim(-20, 420)
 ax.set_aspect('equal')
 ax.axis('off')
 
-height_scale = 4.0  # how much hex radius grows with litter
+height_scale = 4.0
 base_radius = 30
 
 for zone in st.session_state.zones:
     litter = zone["litter"]
-    # Radius grows with litter, shrinks as cleaned
     radius = base_radius + litter * height_scale
-    radius = max(base_radius * 0.6, min(80, radius))  # clamp
+    radius = max(base_radius * 0.6, min(80, radius))
 
-    # Color: green (clean) → red (dirty)
     clean_ratio = 1 - litter / zone["max_litter"]
     r = 1.0 - clean_ratio
     g = clean_ratio * 0.8
@@ -289,7 +284,6 @@ for zone in st.session_state.zones:
     edge_color = 'white' if radius > base_radius + 20 else '#555555'
     line_width = 1.5 if radius > base_radius + 20 else 0.8
 
-    # Draw hexagon
     hex_patch = RegularPolygon(
         (zone["x_center"], zone["y_center"]),
         numVertices=6,
@@ -302,72 +296,130 @@ for zone in st.session_state.zones:
     )
     ax.add_patch(hex_patch)
 
-    # Zone name label
     if radius > base_radius + 10:
         ax.text(zone["x_center"], zone["y_center"],
                 zone["name"], fontsize=6, ha='center', va='center',
                 color='white', fontweight='bold', alpha=0.9)
-    # Clean score
     ax.text(zone["x_center"], zone["y_center"] - radius - 6,
             f"{100*(1-litter/zone['max_litter']):.0f}%", fontsize=5,
             ha='center', va='center', color='#aaaaaa', alpha=0.7)
 
-# Ploggers as small dots
 for p in st.session_state.ploggers:
     ax.plot(p["x"], p["y"], 'o', color=p["team"]["color"],
             markersize=5, alpha=0.9, markeredgecolor='white', markeredgewidth=0.5)
 
-# Litter as tiny grey dots
 if st.session_state.litter_items:
     litter_x = [l[0] for l in st.session_state.litter_items]
     litter_y = [l[1] for l in st.session_state.litter_items]
     ax.plot(litter_x, litter_y, '.', color='#888888', markersize=1, alpha=0.6)
 
-# Rain overlay
 if st.session_state.rain:
     ax.text(250, 390, '🌧️ RAINING', fontsize=14, ha='center', alpha=0.5, color='#7799cc')
 
-# Challenge banner
 if st.session_state.challenge_active:
     ax.text(250, 10, f'🏆 LEAGUE CHALLENGE ACTIVE ({team_boost}×)', fontsize=10,
             ha='center', color='gold', fontweight='bold',
             bbox=dict(boxstyle='round,pad=0.3', facecolor='black', alpha=0.6))
 
-# Title
 ax.text(250, 405, 'PLOGGING LEAGUE SIM', fontsize=7, ha='center', color='#444444', alpha=0.5)
 
 st.pyplot(fig)
 
-# Auto-refresh
-if run_sim:
-    time.sleep(0.2)
-    st.rerun()
-
 # ═══════════════════════════════════════════════════════════
-# AI PLOGGER VIDEO
+# AI PLOGGER VIDEO (Multi-Plogger with Sound)
 # ═══════════════════════════════════════════════════════════
 if not run_sim:
     st.divider()
+    
+    # ═══════════════════════════════════════════════════════════
+    # DATABASE: SAVE SESSION + GLOBAL LEADERBOARD
+    # ═══════════════════════════════════════════════════════════
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("💾 Save This Session")
+        if st.button("📊 Save to Global Leaderboard"):
+            for team_name, points in sorted_teams:
+                db.save_session(
+                    team_name=team_name,
+                    points=points,
+                    collected=st.session_state.total_collected // 4,
+                    distance=total_litter * 0.01 / 4,
+                    clean_score=avg_clean,
+                    day=st.session_state.sim_day,
+                    hour=st.session_state.sim_hour
+                )
+            st.success("Session saved to global leaderboard!")
+            st.rerun()
+    
+    with col2:
+        st.subheader("🌍 Global Stats")
+        try:
+            gs = db.get_global_stats()
+            st.metric("Total Litter Collected", f"{gs['total_litter_collected']:,}")
+            st.metric("Total CP Earned", f"{gs['total_cp_earned']:,}")
+            st.metric("Total Sessions", gs['total_sessions'])
+        except:
+            st.info("Run a session first!")
+    
+    # All-Time Leaderboard
+    st.subheader("🏅 All-Time Leaderboard")
+    try:
+        lb = db.get_leaderboard()
+        if lb:
+            lb_data = []
+            for i, team in enumerate(lb):
+                lb_data.append({
+                    "Rank": f"{'🥇' if i==0 else '🥈' if i==1 else '🥉' if i==2 else i+1}",
+                    "Team": team['name'],
+                    "Points": f"{team['total_points']:,}",
+                    "Collected": f"{team['total_collected']:,}",
+                    "Games": team['games_played']
+                })
+            st.dataframe(lb_data, use_container_width=True, hide_index=True)
+        else:
+            st.info("No sessions saved yet. Run the sim and click 'Save Session'!")
+    except:
+        st.info("Database will initialize on first save.")
+    
+    st.divider()
+    
+    # ═══════════════════════════════════════════════════════════
+    # AI PLOGGER VIDEO
+    # ═══════════════════════════════════════════════════════════
     st.subheader("🎬 AI Plogger in Action")
-    st.caption("Watch our AI plogger jogging, spotting litter, and cleaning the city!")
+    st.caption("Watch all 4 teams plogging with sound effects!")
     try:
         video_file = open("plogging_ai_multi_sound.mov", "rb")
         video_bytes = video_file.read()
         st.video(video_bytes)
         video_file.close()
     except FileNotFoundError:
-        st.info("📹 AI plogger video is being generated... Run `python ai_plogger_video_moviepy.py` locally to create it.")
-# ═══════════════════════════════════════════════════════════
-# DOWNLOAD IMPACT REPORT
-# ═══════════════════════════════════════════════════════════
-if not run_sim:
+        try:
+            video_file = open("plogging_ai_video.mp4", "rb")
+            video_bytes = video_file.read()
+            st.video(video_bytes)
+            video_file.close()
+        except FileNotFoundError:
+            st.info("📹 Video available on Streamlit Cloud")
+    
     st.divider()
+    
+    # ═══════════════════════════════════════════════════════════
+    # DOWNLOAD IMPACT REPORT
+    # ═══════════════════════════════════════════════════════════
     st.subheader("📄 Download Your Impact Report")
     if st.button("📥 Generate Impact Report PDF"):
         try:
             from impact_report import generate_report
             import tempfile, os as os_mod
-            stats = {"distance": total_litter * 0.01, "collected": st.session_state.total_collected, "points": int(st.session_state.total_cp), "clean_score": avg_clean, "day": st.session_state.sim_day, "hour": st.session_state.sim_hour}
+            stats = {
+                "distance": total_litter * 0.01,
+                "collected": st.session_state.total_collected,
+                "points": int(st.session_state.total_cp),
+                "clean_score": avg_clean,
+                "day": st.session_state.sim_day,
+                "hour": st.session_state.sim_hour
+            }
             with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
                 fig.savefig(tmp.name, dpi=150, bbox_inches="tight", facecolor="#0a0e14")
                 hp = tmp.name
@@ -375,20 +427,11 @@ if not run_sim:
             with open(rp, "rb") as f:
                 st.download_button("💾 Download PDF Report", f, os_mod.path.basename(rp), "application/pdf")
         except Exception as e:
-            st.error(f"Could not generate report: {e}")
+            st.error(f"Could not generate report: {e}")═══════════════════════════════════════════════════════════
+# AUTO-REFRESH
+# ═══════════════════════════════════════════════════════════
+if run_sim:
+    time.sleep(0.2)
+    st.rerun()
 
 
-# ═══════════════════════════════════════════════════════════
-# AI PLOGGER VIDEO (runs only on first load, not in loop)
-# ═══════════════════════════════════════════════════════════
-if not run_sim:
-    st.divider()
-    st.subheader("🎬 AI Plogger in Action")
-    st.caption("Watch our AI plogger jogging, spotting litter, and cleaning the city!")
-    try:
-        video_file = open("plogging_ai_multi_sound.mov", "rb")
-        video_bytes = video_file.read()
-        st.video(video_bytes)
-        video_file.close()
-    except FileNotFoundError:
-        st.info("📹 AI plogger video is being generated... Run `python ai_plogger_video.py` locally to create it.")
