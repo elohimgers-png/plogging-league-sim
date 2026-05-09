@@ -70,7 +70,33 @@ if "zones" not in st.session_state:
         z["litter"] += 1
 
 with st.sidebar:
-    st.image("https://img.icons8.com/color/96/plogging.png", width=80)
+    # Custom Plogger Logo
+    st.markdown("""
+    <div style="text-align: center; padding: 10px 0;">
+        <svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="60" cy="60" r="58" fill="#1a3a2a" stroke="#00cc66" stroke-width="3"/>
+            <circle cx="60" cy="35" r="14" fill="#FFCD94" stroke="#d4a574" stroke-width="1.5"/>
+            <circle cx="64" cy="33" r="2" fill="#333"/>
+            <circle cx="70" cy="33" r="2" fill="#333"/>
+            <path d="M63 38 Q67 42 71 38" stroke="#333" stroke-width="1.5" fill="none"/>
+            <rect x="50" y="18" width="20" height="6" rx="2" fill="#0064C8"/>
+            <rect x="47" y="22" width="12" height="4" rx="1" fill="#0064C8"/>
+            <line x1="60" y1="49" x2="60" y2="70" stroke="#009688" stroke-width="8" stroke-linecap="round"/>
+            <line x1="60" y1="55" x2="42" y2="62" stroke="#009688" stroke-width="5" stroke-linecap="round"/>
+            <line x1="60" y1="55" x2="78" y2="62" stroke="#009688" stroke-width="5" stroke-linecap="round"/>
+            <line x1="60" y1="70" x2="48" y2="90" stroke="#282828" stroke-width="6" stroke-linecap="round"/>
+            <line x1="60" y1="70" x2="72" y2="90" stroke="#282828" stroke-width="6" stroke-linecap="round"/>
+            <line x1="48" y1="90" x2="44" y2="105" stroke="#323232" stroke-width="5" stroke-linecap="round"/>
+            <line x1="72" y1="90" x2="76" y2="105" stroke="#323232" stroke-width="5" stroke-linecap="round"/>
+            <rect x="40" y="58" width="18" height="14" rx="3" fill="#006400" stroke="#00cc66" stroke-width="1"/>
+            <text x="49" y="69" font-size="8" fill="white" text-anchor="middle">R</text>
+            <circle cx="85" cy="85" r="6" fill="#ff0000" opacity="0.8"/>
+            <circle cx="95" cy="78" r="5" fill="#ffdd00" opacity="0.8"/>
+            <circle cx="88" cy="72" r="4" fill="#00cc00" opacity="0.8"/>
+            <text x="60" y="118" text-anchor="middle" font-size="8" fill="#00cc66" font-weight="bold">PLOGGING</text>
+        </svg>
+    </div>
+    """, unsafe_allow_html=True)
     st.title("About the Dashboard")
     
     with st.expander("What is Plogging League Simulator?"):
