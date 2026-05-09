@@ -1,4 +1,4 @@
-# app.py - Plogging League Simulator (Segfault-Proof 2.5D View)
+# app.py - Plogging League Berlin (Segfault-Proof 2.5D View)
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -13,28 +13,8 @@ import io
 # ═══════════════════════════════════════════════════════════
 # PAGE CONFIG
 # ═══════════════════════════════════════════════════════════
-st.set_page_config(page_title="Plogging League Sim", layout="wide", initial_sidebar_state="collapsed")
-st.markdown("""
-<style>
-@media (max-width: 768px) {
-    [data-testid="stSidebar"] { display: none; }
-    [data-testid="stSidebarCollapsedControl"] { display: block !important; }
-    .main > div { padding: 10px !important; }
-    h1 { font-size: 1.5rem !important; }
-    h2 { font-size: 1.2rem !important; }
-    h3 { font-size: 1rem !important; }
-    .stButton button { width: 100% !important; padding: 12px !important; font-size: 16px !important; }
-}
-@media (min-width: 769px) {
-    [data-testid="stSidebar"] { display: block !important; }
-}
-.stButton button { border-radius: 10px !important; transition: all 0.2s ease !important; }
-.stButton button:hover { transform: scale(1.02) !important; box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important; }
-video { max-width: 100% !important; border-radius: 10px !important; }
-[data-testid="stDataFrame"] { border-radius: 10px !important; overflow: hidden !important; }
-</style>
-""", unsafe_allow_html=True)
-st.title("🏃‍♂️ Plogging League Simulator")
+st.set_page_config(page_title="Plogging League Sim", layout="wide")
+st.title("🏃‍♂️ Plogging League Berlin")
 st.caption("Hex tiles rise as litter piles up · sink as cleaned")
 
 # ═══════════════════════════════════════════════════════════
@@ -48,9 +28,9 @@ TEAMS = [
 ]
 
 ZONE_NAMES = [
-    "Downtown", "Riverside Park", "Old Town", "Harbour District",
-    "University Area", "Suburbia North", "Industrial Zone", "Market Square",
-    "Botanical Gardens", "Coastal Path", "City Centre", "East Village"
+    "Mitte", "Kreuzberg", "Prenzlauer Berg", "Friedrichshain",
+    "Charlottenburg", "Neukölln", "Schöneberg", "Wedding",
+    "Tiergarten", "Moabit", "Lichtenberg", "Tempelhof"
 ]
 
 # ═══════════════════════════════════════════════════════════
@@ -113,7 +93,6 @@ if "zones" not in st.session_state:
 # ═══════════════════════════════════════════════════════════
 with st.sidebar:
     st.header("🎛️ Controls")
-    st.caption("Tap ☰ to open/close on mobile")
     spawn_rate = st.slider("Litter spawn rate", 1.0, 15.0, 5.0, 0.5)
     motivation = st.slider("Plogger motivation", 20, 100, 70, 5) / 100.0
     team_boost = st.slider("Team boost multiplier", 1.0, 3.0, 1.5, 0.1)
