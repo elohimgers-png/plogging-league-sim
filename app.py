@@ -99,6 +99,28 @@ with st.sidebar:
     """, unsafe_allow_html=True)
     st.title("About the Dashboard")
     
+    with st.expander("🔊 Audio Instructions / Audio-Anleitung / Maagizo ya Sauti"):
+        st.markdown("**English**")
+        try:
+            with open("instructions_en.mp3", "rb") as f:
+                st.audio(f.read(), format="audio/mp3")
+        except:
+            st.info("Audio file generating...")
+        
+        st.markdown("**Deutsch (German)**")
+        try:
+            with open("instructions_de.mp3", "rb") as f:
+                st.audio(f.read(), format="audio/mp3")
+        except:
+            st.info("Audio file generating...")
+        
+        st.markdown("**Kiswahili (Swahili)**")
+        try:
+            with open("instructions_sw.mp3", "rb") as f:
+                st.audio(f.read(), format="audio/mp3")
+        except:
+            st.info("Audio file generating...")
+    
     with st.expander("What is Plogging League Simulator?"):
         st.markdown("""
         The **Plogging League Simulator** is an interactive game-like simulation where teams compete to collect litter while jogging.
