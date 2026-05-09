@@ -1,4 +1,4 @@
-# app.py - Plogging League Simulator (Cloud-Ready + Multi-Plogger Video + Impact Report)
+# app.py - Plogging League Simulator (Cloud-Ready + Database + Multi-Plogger Video + Impact Report)
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -8,10 +8,114 @@ import math
 import matplotlib.pyplot as plt
 from matplotlib.patches import RegularPolygon
 import database as db
+
 # ═══════════════════════════════════════════════════════════
 # PAGE CONFIG
 # ═══════════════════════════════════════════════════════════
 st.set_page_config(page_title="Plogging League Sim", layout="wide")
+python3 << 'EOF'
+with open("app.py", "r") as f:
+    content = f.read()
+
+# Find the set_page_config line and add responsive CSS after it
+old_config = '''st.set_page_config(page_title="Plogging League Sim", layout="wide")
+st.title("🏃‍♂️ Plogging League Simulator")
+st.caption("Hex tiles rise as litter piles up · sink as cleaned")'''
+
+new_config = '''st.set_page_config(page_title="Plogging League Sim", layout="wide", initial_sidebar_state="collapsed")
+
+# ═══════════════════════════════════════════════════════════
+# MOBILE-RESPONSIVE CSS
+# ═══════════════════════════════════════════════════════════
+st.markdown("""
+<style>
+/* Mobile: collapse sidebar, full-width content */
+@media (max-width: 768px) {
+    [data-testid="stSidebar"] {
+        display: none;
+    }
+    [data-testid="stSidebarCollapsedControl"] {
+        display: block !important;
+    }
+    .main > div {
+        padding: 10px !important;
+    }
+    h1 {
+        font-size: 1.5rem !important;
+    }
+    h2 {
+        font-size: 1.2rem !important;
+    }
+    h3 {
+        font-size: 1rem !important;
+    }
+    .stButton button {
+        width: 100% !important;
+        padding: 12px !important;
+        font-size: 16px !important;
+    }
+    [data-testid="stMetric"] {
+        font-size: 0.9rem !important;
+    }
+}
+
+/* Tablet and up: sidebar visible by default */
+@media (min-width: 769px) {
+    [data-testid="stSidebar"] {
+        display: block !important;
+    }
+}
+
+/* Touch-friendly buttons on all screens */
+.stButton button {
+    border-radius: 10px !important;
+    transition: all 0.2s ease !important;
+}
+.stButton button:hover {
+    transform: scale(1.02) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+}
+
+/* Better video player on mobile */
+video {
+    max-width: 100% !important;
+    border-radius: 10px !important;
+}
+
+/* Clean table styles */
+[data-testid="stDataFrame"] {
+    border-radius: 10px !important;
+    overflow: hidden !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.title("🏃‍♂️ Plogging League Simulator")
+st.caption("Hex tiles rise as litter piles up · sink as cleaned")'''
+
+content = content.replace(old_config, new_config)
+
+# Also add a sidebar toggle hint for mobile
+old_sidebar = '''with st.sidebar:
+    st.header("🎛️ Controls")'''
+
+new_sidebar = '''with st.sidebar:
+    st.header("🎛️ Controls")
+    st.caption("Tap ☰ to open/close on mobile")'''
+
+content = content.replace(old_sidebar, new_sidebar)
+
+with open("app.py", "w") as f:
+    f.write(content)
+
+print("Mobile-responsive CSS added!")
+print("Changes:")
+print("  - Sidebar auto-collapses on phones")
+print("  - Full-width buttons on mobile")
+print("  - Touch-friendly design")
+print("  - Responsive font sizes")
+print("  - Better video player sizing")
+EOF
 st.title("🏃‍♂️ Plogging League Simulator")
 st.caption("Hex tiles rise as litter piles up · sink as cleaned")
 
@@ -326,14 +430,12 @@ ax.text(250, 405, 'PLOGGING LEAGUE SIM', fontsize=7, ha='center', color='#444444
 st.pyplot(fig)
 
 # ═══════════════════════════════════════════════════════════
-# AI PLOGGER VIDEO (Multi-Plogger with Sound)
+# PAUSE SCREEN: DATABASE + VIDEO + REPORT
 # ═══════════════════════════════════════════════════════════
 if not run_sim:
     st.divider()
     
-    # ═══════════════════════════════════════════════════════════
-    # DATABASE: SAVE SESSION + GLOBAL LEADERBOARD
-    # ═══════════════════════════════════════════════════════════
+    # SAVE SESSION + GLOBAL STATS
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("💾 Save This Session")
@@ -361,7 +463,7 @@ if not run_sim:
         except:
             st.info("Run a session first!")
     
-    # All-Time Leaderboard
+    # ALL-TIME LEADERBOARD
     st.subheader("🏅 All-Time Leaderboard")
     try:
         lb = db.get_leaderboard()
@@ -383,9 +485,7 @@ if not run_sim:
     
     st.divider()
     
-    # ═══════════════════════════════════════════════════════════
     # AI PLOGGER VIDEO
-    # ═══════════════════════════════════════════════════════════
     st.subheader("🎬 AI Plogger in Action")
     st.caption("Watch all 4 teams plogging with sound effects!")
     try:
@@ -404,9 +504,7 @@ if not run_sim:
     
     st.divider()
     
-    # ═══════════════════════════════════════════════════════════
     # DOWNLOAD IMPACT REPORT
-    # ═══════════════════════════════════════════════════════════
     st.subheader("📄 Download Your Impact Report")
     if st.button("📥 Generate Impact Report PDF"):
         try:
@@ -428,10 +526,10 @@ if not run_sim:
                 st.download_button("💾 Download PDF Report", f, os_mod.path.basename(rp), "application/pdf")
         except Exception as e:
             st.error(f"Could not generate report: {e}")
+
+# ═══════════════════════════════════════════════════════════
 # AUTO-REFRESH
 # ═══════════════════════════════════════════════════════════
 if run_sim:
     time.sleep(0.2)
     st.rerun()
-
-
