@@ -1,4 +1,4 @@
-# app.py - Plogging League Simulator (Cloud-Ready + Database + Multi-Plogger Video + Impact Report)
+# app.py - Plogging League Simulator (Segfault-Proof 2.5D View)
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -6,121 +6,39 @@ import time
 import random
 import math
 import matplotlib.pyplot as plt
-from matplotlib.patches import RegularPolygon
-import database as db
+from matplotlib.patches import Polygon, RegularPolygon
+from matplotlib.collections import PatchCollection
+import io
 
 # ═══════════════════════════════════════════════════════════
 # PAGE CONFIG
 # ═══════════════════════════════════════════════════════════
-st.set_page_config(page_title="Plogging League Sim", layout="wide")
-python3 << 'EOF'
-with open("app.py", "r") as f:
-    content = f.read()
-
-# Find the set_page_config line and add responsive CSS after it
-old_config = '''st.set_page_config(page_title="Plogging League Sim", layout="wide")
-st.title("🏃‍♂️ Plogging League Simulator")
-st.caption("Hex tiles rise as litter piles up · sink as cleaned")'''
-
-new_config = '''st.set_page_config(page_title="Plogging League Sim", layout="wide", initial_sidebar_state="collapsed")
-
-# ═══════════════════════════════════════════════════════════
-# MOBILE-RESPONSIVE CSS
-# ═══════════════════════════════════════════════════════════
+st.set_page_config(page_title="Plogging League Sim", layout="wide", initial_sidebar_state="collapsed")
 st.markdown("""
 <style>
-/* Mobile: collapse sidebar, full-width content */
 @media (max-width: 768px) {
-    [data-testid="stSidebar"] {
-        display: none;
-    }
-    [data-testid="stSidebarCollapsedControl"] {
-        display: block !important;
-    }
-    .main > div {
-        padding: 10px !important;
-    }
-    h1 {
-        font-size: 1.5rem !important;
-    }
-    h2 {
-        font-size: 1.2rem !important;
-    }
-    h3 {
-        font-size: 1rem !important;
-    }
-    .stButton button {
-        width: 100% !important;
-        padding: 12px !important;
-        font-size: 16px !important;
-    }
-    [data-testid="stMetric"] {
-        font-size: 0.9rem !important;
-    }
+    [data-testid="stSidebar"] { display: none; }
+    [data-testid="stSidebarCollapsedControl"] { display: block !important; }
+    .main > div { padding: 10px !important; }
+    h1 { font-size: 1.5rem !important; }
+    h2 { font-size: 1.2rem !important; }
+    h3 { font-size: 1rem !important; }
+    .stButton button { width: 100% !important; padding: 12px !important; font-size: 16px !important; }
 }
-
-/* Tablet and up: sidebar visible by default */
 @media (min-width: 769px) {
-    [data-testid="stSidebar"] {
-        display: block !important;
-    }
+    [data-testid="stSidebar"] { display: block !important; }
 }
-
-/* Touch-friendly buttons on all screens */
-.stButton button {
-    border-radius: 10px !important;
-    transition: all 0.2s ease !important;
-}
-.stButton button:hover {
-    transform: scale(1.02) !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
-}
-
-/* Better video player on mobile */
-video {
-    max-width: 100% !important;
-    border-radius: 10px !important;
-}
-
-/* Clean table styles */
-[data-testid="stDataFrame"] {
-    border-radius: 10px !important;
-    overflow: hidden !important;
-}
+.stButton button { border-radius: 10px !important; transition: all 0.2s ease !important; }
+.stButton button:hover { transform: scale(1.02) !important; box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important; }
+video { max-width: 100% !important; border-radius: 10px !important; }
+[data-testid="stDataFrame"] { border-radius: 10px !important; overflow: hidden !important; }
 </style>
 """, unsafe_allow_html=True)
-
-st.title("🏃‍♂️ Plogging League Simulator")
-st.caption("Hex tiles rise as litter piles up · sink as cleaned")'''
-
-content = content.replace(old_config, new_config)
-
-# Also add a sidebar toggle hint for mobile
-old_sidebar = '''with st.sidebar:
-    st.header("🎛️ Controls")'''
-
-new_sidebar = '''with st.sidebar:
-    st.header("🎛️ Controls")
-    st.caption("Tap ☰ to open/close on mobile")'''
-
-content = content.replace(old_sidebar, new_sidebar)
-
-with open("app.py", "w") as f:
-    f.write(content)
-
-print("Mobile-responsive CSS added!")
-print("Changes:")
-print("  - Sidebar auto-collapses on phones")
-print("  - Full-width buttons on mobile")
-print("  - Touch-friendly design")
-print("  - Responsive font sizes")
-print("  - Better video player sizing")
-EOF
 st.title("🏃‍♂️ Plogging League Simulator")
 st.caption("Hex tiles rise as litter piles up · sink as cleaned")
 
 # ═══════════════════════════════════════════════════════════
-# TEAM DATA
+# DATA
 # ═══════════════════════════════════════════════════════════
 TEAMS = [
     {"name": "Red Rangers", "color": "#ff0000"},
@@ -191,10 +109,11 @@ if "zones" not in st.session_state:
         z["litter"] += 1
 
 # ═══════════════════════════════════════════════════════════
-# SIDEBAR CONTROLS
+# SIDEBAR
 # ═══════════════════════════════════════════════════════════
 with st.sidebar:
     st.header("🎛️ Controls")
+    st.caption("Tap ☰ to open/close on mobile")
     spawn_rate = st.slider("Litter spawn rate", 1.0, 15.0, 5.0, 0.5)
     motivation = st.slider("Plogger motivation", 20, 100, 70, 5) / 100.0
     team_boost = st.slider("Team boost multiplier", 1.0, 3.0, 1.5, 0.1)
@@ -216,7 +135,7 @@ with st.sidebar:
     lb_placeholder = st.empty()
 
 # ═══════════════════════════════════════════════════════════
-# UPDATE SIMULATION
+# UPDATE SIMULATION (unchanged logic)
 # ═══════════════════════════════════════════════════════════
 def update_simulation(spawn_rate, motivation, team_boost, speed):
     zones = st.session_state.zones
@@ -361,10 +280,11 @@ sorted_teams = sorted(teams_pts.items(), key=lambda x: x[1], reverse=True)
 lb_placeholder.table(pd.DataFrame(sorted_teams, columns=["Team", "Points"]).set_index("Team"))
 
 # ═══════════════════════════════════════════════════════════
-# 2.5D HEX VIEW
+# 2.5D HEX VIEW (No Plotly WebGL → No Segfault)
 # ═══════════════════════════════════════════════════════════
 st.subheader("🗺️ Hex Tile City View")
 
+# We'll use matplotlib to draw isometric-style hexagons with size proportional to litter
 fig, ax = plt.subplots(figsize=(10, 7), facecolor='#0a0e14')
 ax.set_facecolor('#0a0e14')
 ax.set_xlim(-20, 520)
@@ -372,14 +292,16 @@ ax.set_ylim(-20, 420)
 ax.set_aspect('equal')
 ax.axis('off')
 
-height_scale = 4.0
+height_scale = 4.0  # how much hex radius grows with litter
 base_radius = 30
 
 for zone in st.session_state.zones:
     litter = zone["litter"]
+    # Radius grows with litter, shrinks as cleaned
     radius = base_radius + litter * height_scale
-    radius = max(base_radius * 0.6, min(80, radius))
+    radius = max(base_radius * 0.6, min(80, radius))  # clamp
 
+    # Color: green (clean) → red (dirty)
     clean_ratio = 1 - litter / zone["max_litter"]
     r = 1.0 - clean_ratio
     g = clean_ratio * 0.8
@@ -388,6 +310,7 @@ for zone in st.session_state.zones:
     edge_color = 'white' if radius > base_radius + 20 else '#555555'
     line_width = 1.5 if radius > base_radius + 20 else 0.8
 
+    # Draw hexagon
     hex_patch = RegularPolygon(
         (zone["x_center"], zone["y_center"]),
         numVertices=6,
@@ -400,124 +323,72 @@ for zone in st.session_state.zones:
     )
     ax.add_patch(hex_patch)
 
+    # Zone name label
     if radius > base_radius + 10:
         ax.text(zone["x_center"], zone["y_center"],
                 zone["name"], fontsize=6, ha='center', va='center',
                 color='white', fontweight='bold', alpha=0.9)
+    # Clean score
     ax.text(zone["x_center"], zone["y_center"] - radius - 6,
             f"{100*(1-litter/zone['max_litter']):.0f}%", fontsize=5,
             ha='center', va='center', color='#aaaaaa', alpha=0.7)
 
+# Ploggers as small dots
 for p in st.session_state.ploggers:
     ax.plot(p["x"], p["y"], 'o', color=p["team"]["color"],
             markersize=5, alpha=0.9, markeredgecolor='white', markeredgewidth=0.5)
 
+# Litter as tiny grey dots
 if st.session_state.litter_items:
     litter_x = [l[0] for l in st.session_state.litter_items]
     litter_y = [l[1] for l in st.session_state.litter_items]
     ax.plot(litter_x, litter_y, '.', color='#888888', markersize=1, alpha=0.6)
 
+# Rain overlay
 if st.session_state.rain:
     ax.text(250, 390, '🌧️ RAINING', fontsize=14, ha='center', alpha=0.5, color='#7799cc')
 
+# Challenge banner
 if st.session_state.challenge_active:
     ax.text(250, 10, f'🏆 LEAGUE CHALLENGE ACTIVE ({team_boost}×)', fontsize=10,
             ha='center', color='gold', fontweight='bold',
             bbox=dict(boxstyle='round,pad=0.3', facecolor='black', alpha=0.6))
 
+# Title
 ax.text(250, 405, 'PLOGGING LEAGUE SIM', fontsize=7, ha='center', color='#444444', alpha=0.5)
 
 st.pyplot(fig)
 
+# Auto-refresh
+if run_sim:
+    time.sleep(0.2)
+    st.rerun()
+
 # ═══════════════════════════════════════════════════════════
-# PAUSE SCREEN: DATABASE + VIDEO + REPORT
+# AI PLOGGER VIDEO
 # ═══════════════════════════════════════════════════════════
 if not run_sim:
     st.divider()
-    
-    # SAVE SESSION + GLOBAL STATS
-    col1, col2 = st.columns(2)
-    with col1:
-        st.subheader("💾 Save This Session")
-        if st.button("📊 Save to Global Leaderboard"):
-            for team_name, points in sorted_teams:
-                db.save_session(
-                    team_name=team_name,
-                    points=points,
-                    collected=st.session_state.total_collected // 4,
-                    distance=total_litter * 0.01 / 4,
-                    clean_score=avg_clean,
-                    day=st.session_state.sim_day,
-                    hour=st.session_state.sim_hour
-                )
-            st.success("Session saved to global leaderboard!")
-            st.rerun()
-    
-    with col2:
-        st.subheader("🌍 Global Stats")
-        try:
-            gs = db.get_global_stats()
-            st.metric("Total Litter Collected", f"{gs['total_litter_collected']:,}")
-            st.metric("Total CP Earned", f"{gs['total_cp_earned']:,}")
-            st.metric("Total Sessions", gs['total_sessions'])
-        except:
-            st.info("Run a session first!")
-    
-    # ALL-TIME LEADERBOARD
-    st.subheader("🏅 All-Time Leaderboard")
-    try:
-        lb = db.get_leaderboard()
-        if lb:
-            lb_data = []
-            for i, team in enumerate(lb):
-                lb_data.append({
-                    "Rank": f"{'🥇' if i==0 else '🥈' if i==1 else '🥉' if i==2 else i+1}",
-                    "Team": team['name'],
-                    "Points": f"{team['total_points']:,}",
-                    "Collected": f"{team['total_collected']:,}",
-                    "Games": team['games_played']
-                })
-            st.dataframe(lb_data, use_container_width=True, hide_index=True)
-        else:
-            st.info("No sessions saved yet. Run the sim and click 'Save Session'!")
-    except:
-        st.info("Database will initialize on first save.")
-    
-    st.divider()
-    
-    # AI PLOGGER VIDEO
     st.subheader("🎬 AI Plogger in Action")
-    st.caption("Watch all 4 teams plogging with sound effects!")
+    st.caption("Watch our AI plogger jogging, spotting litter, and cleaning the city!")
     try:
-        video_file = open("plogging_ai_multi_sound.mov", "rb")
+        video_file = open("plogging_ai_video.mp4", "rb")
         video_bytes = video_file.read()
         st.video(video_bytes)
         video_file.close()
     except FileNotFoundError:
-        try:
-            video_file = open("plogging_ai_video.mp4", "rb")
-            video_bytes = video_file.read()
-            st.video(video_bytes)
-            video_file.close()
-        except FileNotFoundError:
-            st.info("📹 Video available on Streamlit Cloud")
-    
+        st.info("📹 AI plogger video is being generated... Run `python ai_plogger_video_moviepy.py` locally to create it.")
+# ═══════════════════════════════════════════════════════════
+# DOWNLOAD IMPACT REPORT
+# ═══════════════════════════════════════════════════════════
+if not run_sim:
     st.divider()
-    
-    # DOWNLOAD IMPACT REPORT
     st.subheader("📄 Download Your Impact Report")
     if st.button("📥 Generate Impact Report PDF"):
         try:
             from impact_report import generate_report
             import tempfile, os as os_mod
-            stats = {
-                "distance": total_litter * 0.01,
-                "collected": st.session_state.total_collected,
-                "points": int(st.session_state.total_cp),
-                "clean_score": avg_clean,
-                "day": st.session_state.sim_day,
-                "hour": st.session_state.sim_hour
-            }
+            stats = {"distance": total_litter * 0.01, "collected": st.session_state.total_collected, "points": int(st.session_state.total_cp), "clean_score": avg_clean, "day": st.session_state.sim_day, "hour": st.session_state.sim_hour}
             with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
                 fig.savefig(tmp.name, dpi=150, bbox_inches="tight", facecolor="#0a0e14")
                 hp = tmp.name
@@ -527,9 +398,18 @@ if not run_sim:
         except Exception as e:
             st.error(f"Could not generate report: {e}")
 
+
 # ═══════════════════════════════════════════════════════════
-# AUTO-REFRESH
+# AI PLOGGER VIDEO (runs only on first load, not in loop)
 # ═══════════════════════════════════════════════════════════
-if run_sim:
-    time.sleep(0.2)
-    st.rerun()
+if not run_sim:
+    st.divider()
+    st.subheader("🎬 AI Plogger in Action")
+    st.caption("Watch our AI plogger jogging, spotting litter, and cleaning the city!")
+    try:
+        video_file = open("plogging_ai_video.mp4", "rb")
+        video_bytes = video_file.read()
+        st.video(video_bytes)
+        video_file.close()
+    except FileNotFoundError:
+        st.info("📹 AI plogger video is being generated... Run `python ai_plogger_video.py` locally to create it.")
