@@ -120,6 +120,20 @@ with st.sidebar:
                 st.audio(f.read(), format="audio/mp3")
         except:
             st.info("Audio file generating...")
+        
+        st.markdown("**Svenska (Swedish)**")
+        try:
+            with open("instructions_sv.mp3", "rb") as f:
+                st.audio(f.read(), format="audio/mp3")
+        except:
+            st.info("Audio file generating...")
+        
+        st.markdown("**한국어 (Korean)**")
+        try:
+            with open("instructions_ko.mp3", "rb") as f:
+                st.audio(f.read(), format="audio/mp3")
+        except:
+            st.info("Audio file generating...")
     
     with st.expander("What is Plogging League Simulator?"):
         st.markdown("""
