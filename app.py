@@ -295,6 +295,16 @@ if not run_sim:
         except Exception as e:
             st.error(f"Error: {e}")
 
+st.divider()
+st.markdown("""
+<div style="text-align: center; color: #888888; padding: 10px;">
+    <p>This app was developed by <strong>Gerson Japhet Fumbuka</strong></p>
+    <p>PhD Candidate at <strong>INTI International University and Colleges</strong></p>
+    <p>Nilai, Malaysia</p>
+    <p style="font-size: 0.8rem; margin-top: 10px;">Plogging League Berlin &copy; 2025 &mdash; Sweat for the planet. Run, collect, connect.</p>
+</div>
+""", unsafe_allow_html=True)
+
 if run_sim:
     time.sleep(0.2)
     st.rerun()
