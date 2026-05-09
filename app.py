@@ -70,6 +70,34 @@ if "zones" not in st.session_state:
         z["litter"] += 1
 
 with st.sidebar:
+    st.image("https://img.icons8.com/color/96/plogging.png", width=80)
+    st.title("About the Dashboard")
+    
+    with st.expander("What is Plogging League Simulator?"):
+        st.markdown("""
+        The **Plogging League Simulator** is an interactive game-like simulation where teams compete to collect litter while jogging.
+        
+        **Plogging** = Jogging + picking up litter (from Swedish *plocka upp*).
+        
+        Teams earn points for collecting litter, and their motivation affects performance. Rain slows down collection, while team boosts amplify efforts.
+        """)
+    
+    with st.expander("How to Use the App"):
+        st.markdown("""
+        1. **Run Simulation** - Watch ploggers clean Berlin
+        2. **Adjust Controls** - Change spawn rate, motivation, speed
+        3. **Toggle Rain** - See weather effects
+        4. **Trigger Challenge** - Boost all teams
+        5. **Pause** - View video, save session, download report
+        """)
+    
+    with st.expander("Berlin Districts"):
+        st.markdown("""
+        This edition features 12 real Berlin districts:
+        Mitte, Kreuzberg, Prenzlauer Berg, Friedrichshain, Charlottenburg, Neukolln, Schoneberg, Wedding, Tiergarten, Moabit, Lichtenberg, Tempelhof.
+        """)
+    
+    st.divider()
     st.header("Controls")
     spawn_rate = st.slider("Litter spawn rate", 1.0, 15.0, 5.0, 0.5)
     motivation = st.slider("Plogger motivation", 20, 100, 70, 5) / 100.0
