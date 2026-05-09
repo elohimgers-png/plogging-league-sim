@@ -82,12 +82,12 @@ with st.sidebar:
             <rect x="50" y="18" width="20" height="6" rx="2" fill="#0064C8"/>
             <rect x="47" y="22" width="12" height="4" rx="1" fill="#0064C8"/>
             <line x1="60" y1="49" x2="60" y2="70" stroke="#009688" stroke-width="8" stroke-linecap="round"/>
-            <line x1="60" y1="55" x2="42" y2="62" stroke="#009688" stroke-width="5" stroke-linecap="round"/>
-            <line x1="60" y1="55" x2="78" y2="62" stroke="#009688" stroke-width="5" stroke-linecap="round"/>
-            <line x1="60" y1="70" x2="48" y2="90" stroke="#282828" stroke-width="6" stroke-linecap="round"/>
-            <line x1="60" y1="70" x2="72" y2="90" stroke="#282828" stroke-width="6" stroke-linecap="round"/>
-            <line x1="48" y1="90" x2="44" y2="105" stroke="#323232" stroke-width="5" stroke-linecap="round"/>
-            <line x1="72" y1="90" x2="76" y2="105" stroke="#323232" stroke-width="5" stroke-linecap="round"/>
+            <line x1="60" y1="55" x2="40" y2="60" stroke="#00cc88" stroke-width="5" stroke-linecap="round"/>
+            <line x1="60" y1="55" x2="80" y2="60" stroke="#00cc88" stroke-width="5" stroke-linecap="round"/>
+            <line x1="60" y1="70" x2="48" y2="90" stroke="#FF8C00" stroke-width="6" stroke-linecap="round"/>
+            <line x1="60" y1="70" x2="72" y2="90" stroke="#FF8C00" stroke-width="6" stroke-linecap="round"/>
+            <line x1="48" y1="90" x2="44" y2="105" stroke="#FF6600" stroke-width="5" stroke-linecap="round"/>
+            <line x1="72" y1="90" x2="76" y2="105" stroke="#FF6600" stroke-width="5" stroke-linecap="round"/>
             <rect x="40" y="58" width="18" height="14" rx="3" fill="#006400" stroke="#00cc66" stroke-width="1"/>
             <text x="49" y="69" font-size="8" fill="white" text-anchor="middle">R</text>
             <circle cx="85" cy="85" r="6" fill="#ff0000" opacity="0.8"/>
