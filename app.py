@@ -497,8 +497,6 @@ with st.expander("Preventive Health Check-ins", expanded=False):
 
 st.divider()
 st.markdown("""
-st.divider()
-st.markdown("""
 <div style="text-align: center; color: #888888; padding: 10px;">
     <p>This app was developed by <strong>Gerson Japhet Fumbuka</strong></p>
     <p>PhD Candidate at <strong>INTI International University and Colleges</strong></p>
