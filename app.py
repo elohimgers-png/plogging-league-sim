@@ -505,45 +505,24 @@ if not run_sim:
         if shift > 0:
             st.success(f"Mood improved by {shift} level(s)! Plogging is working for you! 🌟")
             st.info("🌿 **Suggestion:** Try a mindfulness walk in **Tiergarten** or **Tempelhofer Feld** to keep the positive energy going!")
-            if "connect_group" not in st.session_state:
-                st.session_state.connect_group = False
-            if st.button("👥 Connect with Berlin walking groups", key="connect_improved"):
-                st.session_state.connect_group = True
-            if st.session_state.connect_group:
+            if st.button("👥 Connect with Berlin walking groups", key="connect_imp"):
                 st.balloons()
                 st.success("Great! Check out: **Berlin Plogging Meetup** — Saturdays at 9 AM in Volkspark Friedrichshain.")
                 st.markdown("📍 [Volkspark Friedrichshain on Google Maps](https://maps.google.com/?q=Volkspark+Friedrichshain+Berlin)")
-                if st.button("Reset"):
-                    st.session_state.connect_group = False
-                    st.rerun()
         elif shift == 0:
             st.info("Mood stayed the same. A change of scenery might help!")
             st.info("🌿 **Suggestion:** Explore a new route in **Kreuzberg** or join a walking group in **Prenzlauer Berg**.")
-            if "connect_group2" not in st.session_state:
-                st.session_state.connect_group2 = False
             if st.button("👥 Yes, connect me with a walking group", key="connect_same"):
-                st.session_state.connect_group2 = True
-            if st.session_state.connect_group2:
                 st.balloons()
                 st.success("Great! Check out: **Berlin Plogging Meetup** — Saturdays at 9 AM in Volkspark Friedrichshain.")
                 st.markdown("📍 [Volkspark Friedrichshain on Google Maps](https://maps.google.com/?q=Volkspark+Friedrichshain+Berlin)")
-                if st.button("Reset", key="reset_same"):
-                    st.session_state.connect_group2 = False
-                    st.rerun()
         else:
             st.warning("Mood dropped slightly. That's okay — movement still helps long-term.")
             st.info("👥 **Suggestion:** You've been plogging solo. Want to connect with a local walking group in **Friedrichshain**? (Opt-in)")
-            if "connect_group3" not in st.session_state:
-                st.session_state.connect_group3 = False
-            if st.button("👥 Yes, connect me with a group", key="connect_dropped"):
-                st.session_state.connect_group3 = True
-            if st.session_state.connect_group3:
+            if st.button("👥 Yes, connect me with a group", key="connect_drop"):
                 st.balloons()
                 st.success("Great! Check out: **Berlin Plogging Meetup** — Saturdays at 9 AM in Volkspark Friedrichshain.")
                 st.markdown("📍 [Volkspark Friedrichshain on Google Maps](https://maps.google.com/?q=Volkspark+Friedrichshain+Berlin)")
-                if st.button("Reset", key="reset_dropped"):
-                    st.session_state.connect_group3 = False
-                    st.rerun()
         st.caption("All mood data is anonymous and private.")
     
     # Show mood trends
