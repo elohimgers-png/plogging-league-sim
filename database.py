@@ -139,6 +139,30 @@ def get_recent_sessions(limit=10):
     conn.close()
     return results
 
+def save_health_checkin(session_id, balance_sec=None, flexibility_cm=None, reaction_ms=None):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO health_checkins (session_id, balance_sec, flexibility_cm, reaction_ms)
+        VALUES (?, ?, ?, ?)
+    ''', (session_id, balance_sec, flexibility_cm, reaction_ms))
+    conn.commit()
+    conn.close()
+
+def get_health_trends(session_id, limit=10):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT * FROM health_checkins 
+        WHERE session_id=? 
+        ORDER BY timestamp DESC 
+        LIMIT ?
+    ''', (session_id, limit))
+    results = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return results
+
 # Initialize database on import
 init_db()
 print("Database initialized: plogging_league.db")
+
