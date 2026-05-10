@@ -218,6 +218,16 @@ def _ensure_health_table():
             timestamp TEXT DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS physician_alerts (
+            session_id TEXT PRIMARY KEY,
+            physician_email TEXT NOT NULL,
+            physician_name TEXT,
+            alert_enabled INTEGER DEFAULT 1,
+            last_alert_sent TEXT,
+            consent_given INTEGER DEFAULT 1
+        )
+    """)
     conn.commit()
     conn.close()
 
@@ -364,6 +374,16 @@ def should_alert_physician(session_id):
             regimen_start TEXT DEFAULT CURRENT_TIMESTAMP,
             adherence_streak INTEGER DEFAULT 0,
             last_session TEXT
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS physician_alerts (
+            session_id TEXT PRIMARY KEY,
+            physician_email TEXT NOT NULL,
+            physician_name TEXT,
+            alert_enabled INTEGER DEFAULT 1,
+            last_alert_sent TEXT,
+            consent_given INTEGER DEFAULT 1
         )
     """)
     conn.commit()
