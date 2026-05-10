@@ -505,24 +505,27 @@ if not run_sim:
         if shift > 0:
             st.success(f"Mood improved by {shift} level(s)! Plogging is working for you! 🌟")
             st.info("🌿 **Suggestion:** Try a mindfulness walk in **Tiergarten** or **Tempelhofer Feld** to keep the positive energy going!")
-            if st.button("👥 Connect with Berlin walking groups", key="connect_imp"):
+            with st.expander("👥 Want to join a Berlin walking group?"):
                 st.balloons()
-                st.success("Great! Check out: **Berlin Plogging Meetup** — Saturdays at 9 AM in Volkspark Friedrichshain.")
+                st.success("**Berlin Plogging Meetup** — Saturdays at 9 AM in Volkspark Friedrichshain.")
                 st.markdown("📍 [Volkspark Friedrichshain on Google Maps](https://maps.google.com/?q=Volkspark+Friedrichshain+Berlin)")
+                st.markdown("All levels welcome! Bring gloves and a bag.")
         elif shift == 0:
             st.info("Mood stayed the same. A change of scenery might help!")
             st.info("🌿 **Suggestion:** Explore a new route in **Kreuzberg** or join a walking group in **Prenzlauer Berg**.")
-            if st.button("👥 Yes, connect me with a walking group", key="connect_same"):
+            with st.expander("👥 Want to join a Berlin walking group?"):
                 st.balloons()
-                st.success("Great! Check out: **Berlin Plogging Meetup** — Saturdays at 9 AM in Volkspark Friedrichshain.")
+                st.success("**Berlin Plogging Meetup** — Saturdays at 9 AM in Volkspark Friedrichshain.")
                 st.markdown("📍 [Volkspark Friedrichshain on Google Maps](https://maps.google.com/?q=Volkspark+Friedrichshain+Berlin)")
+                st.markdown("All levels welcome! Bring gloves and a bag.")
         else:
             st.warning("Mood dropped slightly. That's okay — movement still helps long-term.")
             st.info("👥 **Suggestion:** You've been plogging solo. Want to connect with a local walking group in **Friedrichshain**? (Opt-in)")
-            if st.button("👥 Yes, connect me with a group", key="connect_drop"):
+            with st.expander("👥 Want to join a Berlin walking group?"):
                 st.balloons()
-                st.success("Great! Check out: **Berlin Plogging Meetup** — Saturdays at 9 AM in Volkspark Friedrichshain.")
+                st.success("**Berlin Plogging Meetup** — Saturdays at 9 AM in Volkspark Friedrichshain.")
                 st.markdown("📍 [Volkspark Friedrichshain on Google Maps](https://maps.google.com/?q=Volkspark+Friedrichshain+Berlin)")
+                st.markdown("All levels welcome! Bring gloves and a bag.")
         st.caption("All mood data is anonymous and private.")
     
     # Show mood trends
