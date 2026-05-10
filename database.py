@@ -160,8 +160,12 @@ def save_mood(session_id, mood_before, mood_after, notes=""):
 def get_mood_trends(session_id, limit=10):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM mood_log WHERE session_id=? ORDER BY timestamp DESC LIMIT ?", (session_id, limit))
-    results = [dict(row) for row in cursor.fetchall()]
+    try:
+        cursor.execute("SELECT * FROM mood_log WHERE session_id=? ORDER BY timestamp DESC LIMIT ?", (session_id, limit))
+        results = [dict(row) for row in cursor.fetchall()]
+    except:
+        cursor.execute("CREATE TABLE IF NOT EXISTS mood_log (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT NOT NULL, mood_before INTEGER, mood_after INTEGER, notes TEXT, timestamp TEXT DEFAULT CURRENT_TIMESTAMP)")
+        results = []
     conn.close()
     return results
 

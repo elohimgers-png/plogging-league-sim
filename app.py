@@ -363,7 +363,7 @@ if not run_sim:
         lb = db.get_leaderboard()
         if lb:
             lb_data = [{"Rank": f"{'🥇' if i==0 else '🥈' if i==1 else '🥉' if i==2 else i+1}", "Team": t['name'], "Points": f"{t['total_points']:,}", "Collected": f"{t['total_collected']:,}", "Games": t['games_played']} for i, t in enumerate(lb)]
-            st.dataframe(lb_data, use_container_width=True, hide_index=True)
+            st.dataframe(lb_data, width='stretch', hide_index=True)
         else:
             st.info("No sessions saved yet!")
     except:
@@ -529,7 +529,10 @@ if not run_sim:
         st.caption("All mood data is anonymous and private.")
     
     # Show mood trends
-    moods = db.get_mood_trends(st.session_state.health_session_id)
+    try:
+        moods = db.get_mood_trends(st.session_state.health_session_id)
+    except:
+        moods = []
     if len(moods) >= 2:
         st.markdown("**📊 Your Mood Trend**")
         df_mood = pd.DataFrame(moods)
@@ -540,7 +543,7 @@ if not run_sim:
         if chart_data:
             chart_df = pd.DataFrame(chart_data).set_index('timestamp')
             chart_df = chart_df.astype(int)
-            st.line_chart(chart_df, use_container_width=True, height=200)
+            st.line_chart(chart_df, width='stretch', height=200)
             st.caption("1=Stressed  2=Meh  3=Good  4=Great")
     
     # ═══════════════════════════════════════════════════════════
