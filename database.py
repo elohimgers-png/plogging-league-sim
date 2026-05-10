@@ -205,7 +205,118 @@ def get_health_trends(session_id, limit=10):
 init_db()
 
 # Force health_checkins table creation (idempotent)
-def _ensure_health_table():
+def _ensure_health_table()
+
+# ═══════════════════════════════════════════════════════════
+# PHYSICIAN ALERT SYSTEM
+# ═══════════════════════════════════════════════════════════
+def save_physician_info(session_id, physician_email, physician_name=""):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS physician_alerts (
+            session_id TEXT PRIMARY KEY,
+            physician_email TEXT NOT NULL,
+            physician_name TEXT,
+            alert_enabled INTEGER DEFAULT 1,
+            last_alert_sent TEXT,
+            consent_given INTEGER DEFAULT 1
+        )
+    """)
+    cursor.execute("INSERT OR REPLACE INTO physician_alerts (session_id, physician_email, physician_name) VALUES (?, ?, ?)",
+                   (session_id, physician_email, physician_name))
+    conn.commit()
+    conn.close()
+
+def get_physician_info(session_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM physician_alerts WHERE session_id=?", (session_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def generate_health_summary(session_id):
+    """Generate a structured health summary for physician."""
+    import datetime
+    summary = []
+    summary.append(f"PLOGGING LEAGUE BERLIN — HEALTH SUMMARY")
+    summary.append(f"Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    summary.append(f"Session ID: {session_id}")
+    summary.append("-" * 50)
+    
+    # Get latest balance test
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM health_checkins WHERE session_id=? AND balance_sec IS NOT NULL ORDER BY timestamp DESC LIMIT 1", (session_id,))
+    balance = cursor.fetchone()
+    if balance:
+        bal = dict(balance)
+        summary.append(f"BALANCE: {bal['balance_sec']:.1f}s | {'Normal' if bal['balance_sec'] >= 10 else 'BELOW NORMAL — Fall risk'}")
+    
+    # Get latest reaction time
+    cursor.execute("SELECT * FROM health_checkins WHERE session_id=? AND reaction_ms IS NOT NULL ORDER BY timestamp DESC LIMIT 1", (session_id,))
+    reaction = cursor.fetchone()
+    if reaction:
+        rxn = dict(reaction)
+        summary.append(f"REACTION TIME: {rxn['reaction_ms']:.0f}ms | {'Normal' if rxn['reaction_ms'] < 500 else 'SLOW — Cognitive concern'}")
+    
+    # Get mood trend
+    cursor.execute("SELECT * FROM mood_log WHERE session_id=? ORDER BY timestamp DESC LIMIT 5", (session_id,))
+    moods = cursor.fetchall()
+    if moods:
+        mood_list = [dict(m) for m in moods]
+        avg_before = sum(m['mood_before'] for m in mood_list) / len(mood_list)
+        avg_after = sum(m['mood_after'] for m in mood_list) / len(mood_list)
+        summary.append(f"MOOD (avg, 1-4 scale): Before={avg_before:.1f} After={avg_after:.1f}")
+        if avg_before <= 1.5:
+            summary.append("⚠️ CONSISTENTLY LOW MOOD — Screen for depression")
+    
+    # Get condition adherence
+    cursor.execute("SELECT * FROM user_conditions WHERE session_id=?", (session_id,))
+    cond = cursor.fetchone()
+    if cond:
+        c = dict(cond)
+        summary.append(f"CONDITION: {c['condition_type']} | Streak: {c['adherence_streak']} sessions")
+        if c['adherence_streak'] == 0:
+            summary.append("⚠️ NO RECENT ACTIVITY — Discuss barriers to exercise")
+    
+    conn.close()
+    return "\n".join(summary)
+
+def should_alert_physician(session_id):
+    """Check if health data triggers an alert."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    alert = False
+    reasons = []
+    
+    # Check balance
+    cursor.execute("SELECT * FROM health_checkins WHERE session_id=? AND balance_sec IS NOT NULL ORDER BY timestamp DESC LIMIT 1", (session_id,))
+    bal = cursor.fetchone()
+    if bal and dict(bal)['balance_sec'] < 10:
+        alert = True
+        reasons.append("Balance below normal (fall risk)")
+    
+    # Check reaction time
+    cursor.execute("SELECT * FROM health_checkins WHERE session_id=? AND reaction_ms IS NOT NULL ORDER BY timestamp DESC LIMIT 1", (session_id,))
+    rxn = cursor.fetchone()
+    if rxn and dict(rxn)['reaction_ms'] > 500:
+        alert = True
+        reasons.append("Slow reaction time (cognitive concern)")
+    
+    # Check mood
+    cursor.execute("SELECT * FROM mood_log WHERE session_id=? ORDER BY timestamp DESC LIMIT 3", (session_id,))
+    moods = cursor.fetchall()
+    if moods:
+        mood_list = [dict(m) for m in moods]
+        avg = sum(m['mood_before'] for m in mood_list) / len(mood_list)
+        if avg <= 1.5:
+            alert = True
+            reasons.append("Persistent low mood")
+    
+    conn.close()
+    return alert, reasons:
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -243,5 +354,116 @@ def _ensure_health_table():
     conn.close()
 
 _ensure_health_table()
+
+# ═══════════════════════════════════════════════════════════
+# PHYSICIAN ALERT SYSTEM
+# ═══════════════════════════════════════════════════════════
+def save_physician_info(session_id, physician_email, physician_name=""):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS physician_alerts (
+            session_id TEXT PRIMARY KEY,
+            physician_email TEXT NOT NULL,
+            physician_name TEXT,
+            alert_enabled INTEGER DEFAULT 1,
+            last_alert_sent TEXT,
+            consent_given INTEGER DEFAULT 1
+        )
+    """)
+    cursor.execute("INSERT OR REPLACE INTO physician_alerts (session_id, physician_email, physician_name) VALUES (?, ?, ?)",
+                   (session_id, physician_email, physician_name))
+    conn.commit()
+    conn.close()
+
+def get_physician_info(session_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM physician_alerts WHERE session_id=?", (session_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def generate_health_summary(session_id):
+    """Generate a structured health summary for physician."""
+    import datetime
+    summary = []
+    summary.append(f"PLOGGING LEAGUE BERLIN — HEALTH SUMMARY")
+    summary.append(f"Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    summary.append(f"Session ID: {session_id}")
+    summary.append("-" * 50)
+    
+    # Get latest balance test
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM health_checkins WHERE session_id=? AND balance_sec IS NOT NULL ORDER BY timestamp DESC LIMIT 1", (session_id,))
+    balance = cursor.fetchone()
+    if balance:
+        bal = dict(balance)
+        summary.append(f"BALANCE: {bal['balance_sec']:.1f}s | {'Normal' if bal['balance_sec'] >= 10 else 'BELOW NORMAL — Fall risk'}")
+    
+    # Get latest reaction time
+    cursor.execute("SELECT * FROM health_checkins WHERE session_id=? AND reaction_ms IS NOT NULL ORDER BY timestamp DESC LIMIT 1", (session_id,))
+    reaction = cursor.fetchone()
+    if reaction:
+        rxn = dict(reaction)
+        summary.append(f"REACTION TIME: {rxn['reaction_ms']:.0f}ms | {'Normal' if rxn['reaction_ms'] < 500 else 'SLOW — Cognitive concern'}")
+    
+    # Get mood trend
+    cursor.execute("SELECT * FROM mood_log WHERE session_id=? ORDER BY timestamp DESC LIMIT 5", (session_id,))
+    moods = cursor.fetchall()
+    if moods:
+        mood_list = [dict(m) for m in moods]
+        avg_before = sum(m['mood_before'] for m in mood_list) / len(mood_list)
+        avg_after = sum(m['mood_after'] for m in mood_list) / len(mood_list)
+        summary.append(f"MOOD (avg, 1-4 scale): Before={avg_before:.1f} After={avg_after:.1f}")
+        if avg_before <= 1.5:
+            summary.append("⚠️ CONSISTENTLY LOW MOOD — Screen for depression")
+    
+    # Get condition adherence
+    cursor.execute("SELECT * FROM user_conditions WHERE session_id=?", (session_id,))
+    cond = cursor.fetchone()
+    if cond:
+        c = dict(cond)
+        summary.append(f"CONDITION: {c['condition_type']} | Streak: {c['adherence_streak']} sessions")
+        if c['adherence_streak'] == 0:
+            summary.append("⚠️ NO RECENT ACTIVITY — Discuss barriers to exercise")
+    
+    conn.close()
+    return "\n".join(summary)
+
+def should_alert_physician(session_id):
+    """Check if health data triggers an alert."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    alert = False
+    reasons = []
+    
+    # Check balance
+    cursor.execute("SELECT * FROM health_checkins WHERE session_id=? AND balance_sec IS NOT NULL ORDER BY timestamp DESC LIMIT 1", (session_id,))
+    bal = cursor.fetchone()
+    if bal and dict(bal)['balance_sec'] < 10:
+        alert = True
+        reasons.append("Balance below normal (fall risk)")
+    
+    # Check reaction time
+    cursor.execute("SELECT * FROM health_checkins WHERE session_id=? AND reaction_ms IS NOT NULL ORDER BY timestamp DESC LIMIT 1", (session_id,))
+    rxn = cursor.fetchone()
+    if rxn and dict(rxn)['reaction_ms'] > 500:
+        alert = True
+        reasons.append("Slow reaction time (cognitive concern)")
+    
+    # Check mood
+    cursor.execute("SELECT * FROM mood_log WHERE session_id=? ORDER BY timestamp DESC LIMIT 3", (session_id,))
+    moods = cursor.fetchall()
+    if moods:
+        mood_list = [dict(m) for m in moods]
+        avg = sum(m['mood_before'] for m in mood_list) / len(mood_list)
+        if avg <= 1.5:
+            alert = True
+            reasons.append("Persistent low mood")
+    
+    conn.close()
+    return alert, reasons
 print("Database initialized: plogging_league.db")
 

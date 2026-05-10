@@ -618,6 +618,51 @@ if not run_sim:
             st.rerun()
     
     # ═══════════════════════════════════════════════════════════
+    # PHYSICIAN ALERT SETUP
+    # ═══════════════════════════════════════════════════════════
+    st.divider()
+    st.subheader("🩺 Physician Alert System")
+    st.caption("Automatically notify your doctor if health trends are concerning. All data shared only with your explicit consent.")
+    
+    physician = db.get_physician_info(st.session_state.health_session_id)
+    
+    if not physician:
+        with st.expander("📋 Set Up Physician Alerts", expanded=True):
+            st.markdown("**Enter your doctor's email to enable automatic health summaries.**")
+            doc_email = st.text_input("Physician Email", placeholder="doctor@clinic.de")
+            doc_name = st.text_input("Physician Name (optional)", placeholder="Dr. Schmidt")
+            consent = st.checkbox("I consent to sharing my anonymized health data with my physician", value=False)
+            if consent and doc_email and st.button("✅ Enable Physician Alerts"):
+                db.save_physician_info(st.session_state.health_session_id, doc_email, doc_name)
+                st.success("Physician alerts enabled! Your doctor will receive summaries when concerning trends are detected.")
+                st.rerun()
+    else:
+        st.success(f"Alerts enabled for: **{physician.get('physician_name', physician['physician_email'])}**")
+        
+        # Show health summary preview
+        with st.expander("📊 View Your Health Summary"):
+            summary = db.generate_health_summary(st.session_state.health_session_id)
+            st.code(summary, language="text")
+        
+        # Check if alert should be sent
+        alert_needed, reasons = db.should_alert_physician(st.session_state.health_session_id)
+        if alert_needed:
+            st.warning("⚠️ **Health Alert Detected!**")
+            for reason in reasons:
+                st.markdown(f"- {reason}")
+            if st.button("📧 Send Alert to Physician Now"):
+                st.balloons()
+                st.success(f"Health summary sent to **{physician['physician_email']}**!")
+                st.info("In production, this would send a real email. Currently, the summary is displayed above for review.")
+        else:
+            st.info("✅ No concerning trends detected. All health indicators are within normal ranges.")
+        
+        # Disable option
+        if st.button("🔄 Disable Physician Alerts"):
+            db.save_physician_info(st.session_state.health_session_id, "", "")
+            st.rerun()
+    
+    # ═══════════════════════════════════════════════════════════
     # FOOTER
     # ═══════════════════════════════════════════════════════════
     st.divider()
