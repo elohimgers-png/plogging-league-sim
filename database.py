@@ -668,8 +668,12 @@ def log_gym_workout(session_id, station_name, exercise, reps):
 def get_gym_stats(session_id):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) as total_workouts, SUM(reps) as total_reps, SUM(points_earned) as total_points FROM gym_workouts WHERE session_id=?", (session_id,))
-    row = cursor.fetchone()
+    try:
+        cursor.execute("SELECT COUNT(*) as total_workouts, SUM(reps) as total_reps, SUM(points_earned) as total_points FROM gym_workouts WHERE session_id=?", (session_id,))
+        row = cursor.fetchone()
+    except:
+        cursor.execute("CREATE TABLE IF NOT EXISTS gym_workouts (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT NOT NULL, station_name TEXT, exercise TEXT, reps INTEGER, points_earned INTEGER, timestamp TEXT DEFAULT CURRENT_TIMESTAMP)")
+        row = None
     conn.close()
     return dict(row) if row else {"total_workouts": 0, "total_reps": 0, "total_points": 0}
 
