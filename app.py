@@ -482,6 +482,49 @@ if not run_sim:
                     st.rerun()
     
     # ═══════════════════════════════════════════════════════════
+    # MOOD MAPPER – Mental Wellbeing
+    # ═══════════════════════════════════════════════════════════
+    st.divider()
+    st.subheader("🧠 Mood Mapper")
+    
+    mood_emojis = {"😟 Stressed": 1, "😐 Meh": 2, "🙂 Good": 3, "😄 Great": 4}
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**Before Exercise**")
+        mood_before_str = st.select_slider("How do you feel before plogging?", options=list(mood_emojis.keys()), key="mood_before")
+        mood_before = mood_emojis[mood_before_str]
+    with col2:
+        st.markdown("**After Exercise**")
+        mood_after_str = st.select_slider("How do you feel after plogging?", options=list(mood_emojis.keys()), key="mood_after")
+        mood_after = mood_emojis[mood_after_str]
+    
+    if st.button("💾 Log My Mood"):
+        db.save_mood(st.session_state.health_session_id, mood_before, mood_after)
+        shift = mood_after - mood_before
+        if shift > 0:
+            st.success(f"Mood improved by {shift} level(s)! Plogging is working for you! 🌟")
+            st.info("🌿 **Suggestion:** Try a mindfulness walk in **Tiergarten** or **Tempelhofer Feld** to keep the positive energy going!")
+        elif shift == 0:
+            st.info("Mood stayed the same. A change of scenery might help!")
+            st.info("🌿 **Suggestion:** Explore a new route in **Kreuzberg** or join a walking group in **Prenzlauer Berg**.")
+        else:
+            st.warning("Mood dropped slightly. That's okay — movement still helps long-term.")
+            st.info("👥 **Suggestion:** You've been plogging solo. Want to connect with a local walking group in **Friedrichshain**? (Opt-in)")
+            if st.button("Yes, connect me with a group"):
+                st.balloons()
+                st.success("Great! Check out: **Berlin Plogging Meetup** — Saturdays at 9 AM in Volkspark Friedrichshain.")
+        st.caption("All mood data is anonymous and private.")
+    
+    # Show mood trends
+    moods = db.get_mood_trends(st.session_state.health_session_id)
+    if len(moods) >= 2:
+        st.markdown("**📊 Your Mood Trend**")
+        df_mood = pd.DataFrame(moods)
+        df_mood = df_mood.sort_values('timestamp')
+        st.line_chart(df_mood.set_index('timestamp')[['mood_before', 'mood_after']], use_container_width=True)
+    
+    # ═══════════════════════════════════════════════════════════
     # FOOTER
     # ═══════════════════════════════════════════════════════════
     st.divider()
