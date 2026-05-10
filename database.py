@@ -180,15 +180,23 @@ def save_user_condition(session_id, condition_type):
 def get_user_condition(session_id):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM user_conditions WHERE session_id=?", (session_id,))
-    row = cursor.fetchone()
+    try:
+        cursor.execute("SELECT * FROM user_conditions WHERE session_id=?", (session_id,))
+        row = cursor.fetchone()
+    except:
+        cursor.execute("CREATE TABLE IF NOT EXISTS user_conditions (session_id TEXT PRIMARY KEY, condition_type TEXT NOT NULL, regimen_start TEXT DEFAULT CURRENT_TIMESTAMP, adherence_streak INTEGER DEFAULT 0, last_session TEXT)")
+        row = None
     conn.close()
     return dict(row) if row else None
 
 def update_adherence(session_id):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("UPDATE user_conditions SET adherence_streak = adherence_streak + 1, last_session = CURRENT_TIMESTAMP WHERE session_id=?", (session_id,))
+    try:
+        cursor.execute("UPDATE user_conditions SET adherence_streak = adherence_streak + 1, last_session = CURRENT_TIMESTAMP WHERE session_id=?", (session_id,))
+    except:
+        cursor.execute("CREATE TABLE IF NOT EXISTS user_conditions (session_id TEXT PRIMARY KEY, condition_type TEXT NOT NULL, regimen_start TEXT DEFAULT CURRENT_TIMESTAMP, adherence_streak INTEGER DEFAULT 0, last_session TEXT)")
+        cursor.execute("INSERT OR IGNORE INTO user_conditions (session_id, condition_type) VALUES (?, ?)", (session_id, "None"))
     conn.commit()
     conn.close()
 
@@ -307,8 +315,12 @@ def save_physician_info(session_id, physician_email, physician_name=""):
 def get_physician_info(session_id):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM physician_alerts WHERE session_id=?", (session_id,))
-    row = cursor.fetchone()
+    try:
+        cursor.execute("SELECT * FROM physician_alerts WHERE session_id=?", (session_id,))
+        row = cursor.fetchone()
+    except:
+        cursor.execute("CREATE TABLE IF NOT EXISTS physician_alerts (session_id TEXT PRIMARY KEY, physician_email TEXT NOT NULL, physician_name TEXT, alert_enabled INTEGER DEFAULT 1, last_alert_sent TEXT, consent_given INTEGER DEFAULT 1)")
+        row = None
     conn.close()
     return dict(row) if row else None
 
@@ -511,8 +523,12 @@ def save_physician_info(session_id, physician_email, physician_name=""):
 def get_physician_info(session_id):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM physician_alerts WHERE session_id=?", (session_id,))
-    row = cursor.fetchone()
+    try:
+        cursor.execute("SELECT * FROM physician_alerts WHERE session_id=?", (session_id,))
+        row = cursor.fetchone()
+    except:
+        cursor.execute("CREATE TABLE IF NOT EXISTS physician_alerts (session_id TEXT PRIMARY KEY, physician_email TEXT NOT NULL, physician_name TEXT, alert_enabled INTEGER DEFAULT 1, last_alert_sent TEXT, consent_given INTEGER DEFAULT 1)")
+        row = None
     conn.close()
     return dict(row) if row else None
 
@@ -628,8 +644,14 @@ def init_gym_stations():
 def get_gym_stations():
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM gym_stations ORDER BY district")
-    results = [dict(row) for row in cursor.fetchall()]
+    try:
+        cursor.execute("SELECT * FROM gym_stations ORDER BY district")
+        results = [dict(row) for row in cursor.fetchall()]
+    except:
+        cursor.execute("CREATE TABLE IF NOT EXISTS gym_stations (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, district TEXT NOT NULL, lat REAL, lon REAL, exercises TEXT)")
+        init_gym_stations()
+        cursor.execute("SELECT * FROM gym_stations ORDER BY district")
+        results = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return results
 
