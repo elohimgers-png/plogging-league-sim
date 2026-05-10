@@ -165,6 +165,29 @@ def get_mood_trends(session_id, limit=10):
     conn.close()
     return results
 
+def save_user_condition(session_id, condition_type):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("INSERT OR REPLACE INTO user_conditions (session_id, condition_type, regimen_start) VALUES (?, ?, CURRENT_TIMESTAMP)",
+                   (session_id, condition_type))
+    conn.commit()
+    conn.close()
+
+def get_user_condition(session_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM user_conditions WHERE session_id=?", (session_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def update_adherence(session_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE user_conditions SET adherence_streak = adherence_streak + 1, last_session = CURRENT_TIMESTAMP WHERE session_id=?", (session_id,))
+    conn.commit()
+    conn.close()
+
 def get_health_trends(session_id, limit=10):
     conn = get_connection()
     cursor = conn.cursor()
@@ -204,6 +227,16 @@ def _ensure_health_table():
             mood_after INTEGER,
             notes TEXT,
             timestamp TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_conditions (
+            session_id TEXT PRIMARY KEY,
+            condition_type TEXT NOT NULL,
+            regimen_start TEXT DEFAULT CURRENT_TIMESTAMP,
+            adherence_streak INTEGER DEFAULT 0,
+            last_session TEXT
         )
     """)
     conn.commit()

@@ -544,6 +544,80 @@ if not run_sim:
             st.caption("1=Stressed  2=Meh  3=Good  4=Great")
     
     # ═══════════════════════════════════════════════════════════
+    # CHRONIC CONDITION SUPPORT
+    # ═══════════════════════════════════════════════════════════
+    st.divider()
+    st.subheader("🏥 Chronic Condition Support")
+    
+    user_cond = db.get_user_condition(st.session_state.health_session_id)
+    
+    if not user_cond:
+        st.markdown("Select a condition for tailored plogging recommendations:")
+        cond_choice = st.selectbox("I have:", ["None", "Diabetes (Type 2)", "Hypertension", "Post-Injury Rehabilitation"], key="cond_select")
+        if cond_choice != "None" and st.button("Activate Condition Support"):
+            db.save_user_condition(st.session_state.health_session_id, cond_choice)
+            st.rerun()
+    else:
+        cond = user_cond['condition_type']
+        streak = user_cond['adherence_streak']
+        st.success(f"Active Plan: **{cond}** | Current Streak: **{streak}** sessions")
+        
+        # Condition-specific advice
+        with st.expander("📋 Your Personalized Plan"):
+            if "Diabetes" in cond:
+                st.markdown("""
+                **Diabetes-Friendly Plogging Plan:**
+                - 🕒 Best time: 30-60 min after meals (stable blood sugar)
+                - 👟 Check feet before and after for blisters
+                - 💧 Stay hydrated, carry a small snack
+                - 📊 Track blood glucose before/after exercise
+                - 🎯 Goal: 150 min moderate activity per week
+                """)
+            elif "Hypertension" in cond:
+                st.markdown("""
+                **Heart-Healthy Plogging Plan:**
+                - 🧘 Warm up 5-10 min before plogging
+                - 🚶 Start with brisk walking, progress to light jogging
+                - 🏋️ Avoid heavy lifting (bending to pick up litter is fine)
+                - 📊 Monitor blood pressure before/after
+                - 🎯 Goal: 30 min daily moderate activity
+                """)
+            elif "Rehab" in cond:
+                st.markdown("""
+                **Recovery Plogging Plan:**
+                - 🩺 Follow your physiotherapist's guidance first
+                - 🐢 Start slow: 10-15 min gentle walking
+                - 🧊 Ice after activity if needed
+                - 📈 Gradually increase duration by 5 min/week
+                - 🎯 Focus on consistency over intensity
+                """)
+        
+        # Family/Peer Challenge
+        with st.expander("👨‍👩‍👧 Family & Peer Challenges"):
+            st.markdown("**Invite your support network!**")
+            challenge = st.selectbox("Choose a challenge:", [
+                "🏆 7-Day Plogging Streak",
+                "👫 Buddy Challenge: Plog with a partner 3x this week",
+                "🏅 Family Fitness: Complete 5 sessions together",
+                "🌟 Recovery Milestone: Reach 10 consecutive sessions"
+            ])
+            if st.button("🎯 Start Challenge"):
+                st.success(f"Challenge activated: **{challenge}** — Share with your network!")
+                st.markdown("📲 Share this app link with family: `https://plogging-league-sim-gj2vuwg38m92hzffkn4nrp.streamlit.app`")
+        
+        # Adherence button
+        if st.button("✅ Log Today's Session (Adherence Check)"):
+            db.update_adherence(st.session_state.health_session_id)
+            st.balloons()
+            st.success(f"Streak updated! You're on a **{streak + 1}-session** streak! Keep it up!")
+            st.rerun()
+        
+        # Reset option
+        if st.button("🔄 Change Condition"):
+            db.save_user_condition(st.session_state.health_session_id, "None")
+            st.rerun()
+    
+    # ═══════════════════════════════════════════════════════════
     # FOOTER
     # ═══════════════════════════════════════════════════════════
     st.divider()
