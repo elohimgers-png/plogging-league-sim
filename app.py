@@ -391,13 +391,118 @@ if not run_sim:
                 st.download_button("Download PDF Report", f, os_mod.path.basename(rp), "application/pdf")
         except Exception as e:
             st.error(f"Error: {e}")
+
+    # ═══════════════════════════════════════════════════════════
+    # HEALTH HUB – Preventive Check-ins
+    # ═══════════════════════════════════════════════════════════
+    st.divider()
+    st.subheader("🩺 Health Hub")
+    with st.expander("Preventive Health Check-ins", expanded=False):
+        tab1, tab2, tab3 = st.tabs(["Balance", "Flexibility", "Reaction Time"])
+
+        # ----- BALANCE TEST -----
+        with tab1:
+            st.markdown("**Single-Leg Balance Test**")
+            st.write("Stand on one leg. Click Start when ready, Stop when you lose balance.")
+            col1, col2 = st.columns(2)
+            if "balance_start" not in st.session_state:
+                st.session_state.balance_start = None
+                st.session_state.balance_end = None
+            with col1:
+                if st.button("Start Balancing"):
+                    st.session_state.balance_start = time.time()
+                    st.session_state.balance_end = None
+            with col2:
+                if st.button("Stop (lost balance)"):
+                    if st.session_state.balance_start is not None:
+                        st.session_state.balance_end = time.time()
+            if st.session_state.balance_start and st.session_state.balance_end:
+                balance_sec = st.session_state.balance_end - st.session_state.balance_start
+                st.success(f"Balance time: **{balance_sec:.1f} seconds**")
+                if balance_sec >= 30:
+                    st.balloons()
+                    st.write("Excellent! Keep it up.")
+                elif balance_sec >= 10:
+                    st.write("Average. Try to reach 30+ seconds.")
+                else:
+                    st.warning("Below average. Consider mentioning this to a doctor.")
+                db.save_health_checkin(st.session_state.health_session_id, balance_sec=balance_sec)
+
+        # ----- FLEXIBILITY TEST -----
+        with tab2:
+            st.markdown("**Sit-and-Reach Flexibility Test**")
+            st.write("Sit with legs straight. Reach forward and measure distance (cm).")
+            flex_cm = st.number_input("Reach distance (cm)", min_value=-30.0, max_value=40.0, value=0.0, step=0.5)
+            if st.button("Save Flexibility Score"):
+                st.write(f"Flexibility: **{flex_cm:.1f} cm**")
+                if flex_cm >= 10:
+                    st.success("Great flexibility!")
+                elif flex_cm >= 0:
+                    st.info("Average. Stretch regularly.")
+                else:
+                    st.warning("Below average. Regular stretching helps.")
+                db.save_health_checkin(st.session_state.health_session_id, flexibility_cm=flex_cm)
+
+        # ----- REACTION TIME TEST -----
+        with tab3:
+            st.markdown("**Reaction Time Test**")
+            st.write("Click as soon as the button turns green!")
+            if "reaction_stage" not in st.session_state:
+                st.session_state.reaction_stage = "ready"
+                st.session_state.reaction_t0 = None
+                st.session_state.reaction_time = None
+            if st.session_state.reaction_stage == "ready":
+                if st.button("Start Reaction Test"):
+                    st.session_state.reaction_stage = "waiting"
+                    st.rerun()
+            elif st.session_state.reaction_stage == "waiting":
+                time.sleep(random.uniform(1.5, 4.0))
+                st.session_state.reaction_t0 = time.time()
+                st.session_state.reaction_stage = "click_now"
+                st.rerun()
+            elif st.session_state.reaction_stage == "click_now":
+                st.markdown("### CLICK NOW!")
+                if st.button("CLICK!"):
+                    st.session_state.reaction_time = (time.time() - st.session_state.reaction_t0) * 1000
+                    st.session_state.reaction_stage = "done"
+                    st.rerun()
+            elif st.session_state.reaction_stage == "done":
+                reaction_ms = st.session_state.reaction_time
+                st.success(f"Reaction time: **{reaction_ms:.0f} ms**")
+                if reaction_ms < 250:
+                    st.balloons()
+                    st.write("Lightning fast!")
+                elif reaction_ms < 350:
+                    st.write("Good. Keep practicing.")
+                else:
+                    st.warning("Slower than average. Exercise and sleep can improve this.")
+                db.save_health_checkin(st.session_state.health_session_id, reaction_ms=reaction_ms)
+                if st.button("Try Again"):
+                    st.session_state.reaction_stage = "ready"
+                    st.rerun()
+    
+    # ═══════════════════════════════════════════════════════════
+    # FOOTER
+    # ═══════════════════════════════════════════════════════════
+    st.divider()
+    st.markdown("""
+    <div style="text-align: center; color: #888888; padding: 10px;">
+        <p>This app was developed by <strong>Gerson Japhet Fumbuka</strong></p>
+        <p>PhD Candidate at <strong>INTI International University and Colleges</strong></p>
+        <p>Nilai, Malaysia</p>
+        <p style="font-size: 0.8rem; margin-top: 10px;">Plogging League Berlin &copy; 2025 &mdash; Sweat for the planet. Run, collect, connect.</p>
+        <p style="font-size: 0.75rem; color: #666666;">Contact: <a href="mailto:ephatatalithacumi@gmail.com" style="color: #00cc66;">ephatatalithacumi@gmail.com</a></p>
+    </div>
+    """, unsafe_allow_html=True)
+
 # ═══════════════════════════════════════════════════════════
 # HEALTH HUB – Preventive Check-ins
 # ═══════════════════════════════════════════════════════════
-st.divider()
-st.subheader("🩺 Health Hub")
-with st.expander("Preventive Health Check-ins", expanded=False):
-    tab1, tab2, tab3 = st.tabs(["Balance", "Flexibility", "Reaction Time"])
+if not run_sim:
+    st.divider()
+    st.subheader("🩺 Health Hub")
+    with st.expander("Preventive Health Check-ins", expanded=False):
+        tab1, tab2, tab3 = st.tabs(["Balance", "Flexibility", "Reaction Time"])
 
     # ----- BALANCE TEST -----
     with tab1:
