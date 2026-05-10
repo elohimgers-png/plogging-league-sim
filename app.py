@@ -505,6 +505,13 @@ if not run_sim:
         if shift > 0:
             st.success(f"Mood improved by {shift} level(s)! Plogging is working for you! 🌟")
             st.info("🌿 **Suggestion:** Try a mindfulness walk in **Tiergarten** or **Tempelhofer Feld** to keep the positive energy going!")
+            if "connect_group" not in st.session_state:
+                st.session_state.connect_group = False
+            if st.button("👥 Connect with Berlin walking groups") or st.session_state.connect_group:
+                st.session_state.connect_group = True
+                st.balloons()
+                st.success("Great! Check out: **Berlin Plogging Meetup** — Saturdays at 9 AM in Volkspark Friedrichshain.")
+                st.markdown("📍 [Volkspark Friedrichshain on Google Maps](https://maps.google.com/?q=Volkspark+Friedrichshain+Berlin)")
         elif shift == 0:
             st.info("Mood stayed the same. A change of scenery might help!")
             st.info("🌿 **Suggestion:** Explore a new route in **Kreuzberg** or join a walking group in **Prenzlauer Berg**.")
@@ -533,9 +540,14 @@ if not run_sim:
         st.markdown("**📊 Your Mood Trend**")
         df_mood = pd.DataFrame(moods)
         df_mood = df_mood.sort_values('timestamp')
-        chart_df = df_mood.set_index('timestamp')[['mood_before', 'mood_after']]
-        chart_df = chart_df.astype(float)
-        st.line_chart(chart_df, use_container_width=True, height=200)
+        chart_data = []
+        for _, row in df_mood.iterrows():
+            chart_data.append({"timestamp": row['timestamp'], "Mood Before": int(row['mood_before']), "Mood After": int(row['mood_after'])})
+        if chart_data:
+            chart_df = pd.DataFrame(chart_data).set_index('timestamp')
+            chart_df = chart_df.astype(int)
+            st.line_chart(chart_df, use_container_width=True, height=200)
+            st.caption("1=Stressed  2=Meh  3=Good  4=Great")
     
     # ═══════════════════════════════════════════════════════════
     # FOOTER
