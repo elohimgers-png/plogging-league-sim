@@ -511,9 +511,13 @@ if not run_sim:
         else:
             st.warning("Mood dropped slightly. That's okay — movement still helps long-term.")
             st.info("👥 **Suggestion:** You've been plogging solo. Want to connect with a local walking group in **Friedrichshain**? (Opt-in)")
-            if st.button("Yes, connect me with a group"):
+            if "connect_group" not in st.session_state:
+                st.session_state.connect_group = False
+            if st.button("Yes, connect me with a group") or st.session_state.connect_group:
+                st.session_state.connect_group = True
                 st.balloons()
                 st.success("Great! Check out: **Berlin Plogging Meetup** — Saturdays at 9 AM in Volkspark Friedrichshain.")
+                st.markdown("📍 [Volkspark Friedrichshain on Google Maps](https://maps.google.com/?q=Volkspark+Friedrichshain+Berlin)")
         st.caption("All mood data is anonymous and private.")
     
     # Show mood trends
