@@ -663,6 +663,60 @@ if not run_sim:
             st.rerun()
     
     # ═══════════════════════════════════════════════════════════
+    # OUTDOOR GYM STATIONS
+    # ═══════════════════════════════════════════════════════════
+    st.divider()
+    st.subheader("🏋️ Outdoor Gym Stations")
+    st.caption("Real Berlin outdoor fitness parks along your plogging route. Log your exercises and earn bonus Clean Points!")
+    
+    stations = db.get_gym_stations()
+    gym_stats = db.get_gym_stats(st.session_state.health_session_id)
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Total Workouts", gym_stats['total_workouts'] or 0)
+    with col2:
+        st.metric("Total Reps", gym_stats['total_reps'] or 0)
+    with col3:
+        st.metric("Gym Points", gym_stats['total_points'] or 0)
+    
+    with st.expander("🗺️ Find Outdoor Gyms in Berlin Districts", expanded=False):
+        # Group stations by district
+        districts = {}
+        for s in stations:
+            dist = s['district']
+            if dist not in districts:
+                districts[dist] = []
+            districts[dist].append(s)
+        
+        for district, station_list in districts.items():
+            st.markdown(f"**{district}**")
+            for s in station_list:
+                exercises = s['exercises'].split(',')
+                exercise_tags = " · ".join([f"`{e.strip()}`" for e in exercises])
+                st.markdown(f"- 🏟️ {s['name']}: {exercise_tags}")
+    
+    with st.expander("🏋️ Log Your Gym Workout", expanded=False):
+        st.markdown("**Select a gym station and log your exercises to earn points!**")
+        
+        # Select station
+        station_names = [s['name'] for s in stations]
+        selected_station = st.selectbox("Choose a gym station:", station_names)
+        
+        # Get exercises for selected station
+        selected = next((s for s in stations if s['name'] == selected_station), None)
+        if selected:
+            exercises = [e.strip() for e in selected['exercises'].split(',')]
+            exercise_choice = st.selectbox("Choose exercise:", exercises)
+            reps = st.number_input("Number of reps:", min_value=1, max_value=100, value=10)
+            
+            if st.button("💪 Log Workout & Earn Points"):
+                points = db.log_gym_workout(st.session_state.health_session_id, selected_station, exercise_choice, reps)
+                st.balloons()
+                st.success(f"Logged **{reps} {exercise_choice}** at **{selected_station}**! Earned **{points} CP**! 🎉")
+                st.info(f"📍 Real location: {selected['name']} — Visit this outdoor gym in Berlin!")
+    
+    # ═══════════════════════════════════════════════════════════
     # FOOTER
     # ═══════════════════════════════════════════════════════════
     st.divider()

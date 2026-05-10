@@ -228,6 +228,29 @@ def _ensure_health_table():
             consent_given INTEGER DEFAULT 1
         )
     """)
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS gym_stations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            district TEXT NOT NULL,
+            lat REAL,
+            lon REAL,
+            exercises TEXT
+        )
+    """)
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS gym_workouts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT NOT NULL,
+            station_name TEXT,
+            exercise TEXT,
+            reps INTEGER,
+            points_earned INTEGER,
+            timestamp TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
     conn.commit()
     conn.close()
 
@@ -247,6 +270,29 @@ def save_physician_info(session_id, physician_email, physician_name=""):
             alert_enabled INTEGER DEFAULT 1,
             last_alert_sent TEXT,
             consent_given INTEGER DEFAULT 1
+        )
+    """)
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS gym_stations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            district TEXT NOT NULL,
+            lat REAL,
+            lon REAL,
+            exercises TEXT
+        )
+    """)
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS gym_workouts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT NOT NULL,
+            station_name TEXT,
+            exercise TEXT,
+            reps INTEGER,
+            points_earned INTEGER,
+            timestamp TEXT DEFAULT CURRENT_TIMESTAMP
         )
     """)
     cursor.execute("INSERT OR REPLACE INTO physician_alerts (session_id, physician_email, physician_name) VALUES (?, ?, ?)",
@@ -386,6 +432,29 @@ def should_alert_physician(session_id):
             consent_given INTEGER DEFAULT 1
         )
     """)
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS gym_stations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            district TEXT NOT NULL,
+            lat REAL,
+            lon REAL,
+            exercises TEXT
+        )
+    """)
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS gym_workouts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT NOT NULL,
+            station_name TEXT,
+            exercise TEXT,
+            reps INTEGER,
+            points_earned INTEGER,
+            timestamp TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
     conn.commit()
     conn.close()
 
@@ -405,6 +474,29 @@ def save_physician_info(session_id, physician_email, physician_name=""):
             alert_enabled INTEGER DEFAULT 1,
             last_alert_sent TEXT,
             consent_given INTEGER DEFAULT 1
+        )
+    """)
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS gym_stations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            district TEXT NOT NULL,
+            lat REAL,
+            lon REAL,
+            exercises TEXT
+        )
+    """)
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS gym_workouts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT NOT NULL,
+            station_name TEXT,
+            exercise TEXT,
+            reps INTEGER,
+            points_earned INTEGER,
+            timestamp TEXT DEFAULT CURRENT_TIMESTAMP
         )
     """)
     cursor.execute("INSERT OR REPLACE INTO physician_alerts (session_id, physician_email, physician_name) VALUES (?, ?, ?)",
@@ -502,4 +594,58 @@ def should_alert_physician(session_id):
     conn.close()
     return alert, reasons
 print("Database initialized: plogging_league.db")
+
+# ═══════════════════════════════════════════════════════════
+# GYM STATION FUNCTIONS
+# ═══════════════════════════════════════════════════════════
+def init_gym_stations():
+    stations = [
+        ("Volkspark Friedrichshain Gym", "Friedrichshain", 52.527, 13.434, "Pull-ups, Parallel Bars, Bench Press, Squat Rack"),
+        ("Tiergarten Outdoor Fitness", "Tiergarten", 52.514, 13.350, "Pull-ups, Push-up Bars, Sit-up Bench, Balance Beam"),
+        ("Tempelhofer Feld Calisthenics", "Tempelhof", 52.473, 13.401, "Pull-ups, Monkey Bars, Climbing Rope, Parallel Bars"),
+        ("Mauerpark Fitness Area", "Prenzlauer Berg", 52.543, 13.403, "Pull-ups, Dip Bars, Sit-up Stations, Stretching Zone"),
+        ("Görlitzer Park Workout", "Kreuzberg", 52.496, 13.430, "Pull-ups, Parallel Bars, Push-up Bars, Balance Station"),
+        ("Schlossgarten Charlottenburg", "Charlottenburg", 52.521, 13.295, "Pull-ups, Push-up Bars, Sit-up Bench, Stretching Area"),
+        ("Körnerpark Calisthenics", "Neukölln", 52.470, 13.435, "Pull-ups, Dip Bars, Squat Station, Balance Beam"),
+        ("Schillerpark Fitness", "Wedding", 52.556, 13.351, "Pull-ups, Parallel Bars, Sit-up Station, Push-up Bars"),
+        ("Wuhlheide Outdoor Gym", "Lichtenberg", 52.463, 13.540, "Pull-ups, Monkey Bars, Climbing Wall, Parallel Bars"),
+        ("Fritz-Schloss-Park Workout", "Moabit", 52.525, 13.350, "Pull-ups, Push-up Bars, Dip Station, Sit-up Bench"),
+        ("Rudolph-Wilde-Park Fitness", "Schöneberg", 52.481, 13.332, "Pull-ups, Parallel Bars, Balance Station, Squat Rack"),
+        ("Volkspark Rehberge Gym", "Wedding", 52.552, 13.325, "Pull-ups, Dip Bars, Monkey Bars, Sit-up Station"),
+    ]
+    conn = get_connection()
+    cursor = conn.cursor()
+    for name, district, lat, lon, exercises in stations:
+        cursor.execute("INSERT OR IGNORE INTO gym_stations (name, district, lat, lon, exercises) VALUES (?, ?, ?, ?, ?)",
+                       (name, district, lat, lon, exercises))
+    conn.commit()
+    conn.close()
+
+def get_gym_stations():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM gym_stations ORDER BY district")
+    results = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return results
+
+def log_gym_workout(session_id, station_name, exercise, reps):
+    points = reps * 2
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO gym_workouts (session_id, station_name, exercise, reps, points_earned) VALUES (?, ?, ?, ?, ?)",
+                   (session_id, station_name, exercise, reps, points))
+    conn.commit()
+    conn.close()
+    return points
+
+def get_gym_stats(session_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) as total_workouts, SUM(reps) as total_reps, SUM(points_earned) as total_points FROM gym_workouts WHERE session_id=?", (session_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else {"total_workouts": 0, "total_reps": 0, "total_points": 0}
+
+init_gym_stations()
 
