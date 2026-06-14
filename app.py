@@ -376,6 +376,17 @@ if not run_sim:
             st.video(f.read())
     except:
         st.info("Video available on Streamlit Cloud")
+    
+    # Vmaker Full Demo Video
+    st.divider()
+    st.subheader("📺 Full Platform Demo")
+    st.caption("Complete walkthrough of Plogging League Berlin features.")
+    try:
+        with open("vmaker_demo.mp4", "rb") as f:
+            st.video(f.read())
+    except FileNotFoundError:
+        st.info("Full demo video coming soon.")
+    
     st.divider()
     st.subheader("Download Your Impact Report")
     if st.button("Generate Impact Report PDF"):
