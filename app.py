@@ -369,13 +369,12 @@ if not run_sim:
     except:
         st.info("Database will initialize on first save.")
     st.divider()
-    st.subheader("AI Plogger in Action")
-    st.caption("Watch all 4 teams plogging with sound effects!")
+    st.subheader("🏃‍♂️ Plogging League Berlin")
+    st.caption("AI-powered environmental sports platform — 12 Berlin districts, 4 teams, complete health ecosystem.")
     try:
-        with open("plogging_ai_multi_sound.mov", "rb") as f:
-            st.video(f.read())
-    except:
-        st.info("Video available on Streamlit Cloud")
+        st.image("plogging_league_poster.png", use_container_width=True)
+    except FileNotFoundError:
+        st.info("Poster image coming soon.")
     
     # Vmaker Full Demo Video
     st.divider()
