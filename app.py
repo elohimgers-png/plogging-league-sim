@@ -738,7 +738,7 @@ if not run_sim:
         <p>This app was developed by <strong>Gerson Japhet Fumbuka</strong></p>
         <p>PhD Candidate at <strong>INTI International University and Colleges</strong></p>
         <p>Nilai, Malaysia</p>
-        <p style="font-size: 0.8rem; margin-top: 10px;">Plogging League Berlin &copy; 2025 &mdash; Sweat for the planet. Run, collect, connect.</p>
+        <p style="font-size: 0.8rem; margin-top: 10px;">Plogging League Berlin &copy; 2026 &mdash; Sweat for the planet. Run, collect, connect.</p>
         <p style="font-size: 0.75rem; color: #666666;">Contact: <a href="mailto:ephatatalithacumi@gmail.com" style="color: #00cc66;">ephatatalithacumi@gmail.com</a></p>
     </div>
     """, unsafe_allow_html=True)
