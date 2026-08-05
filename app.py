@@ -11,7 +11,19 @@ import database as db
 import uuid
 
 st.set_page_config(page_title="Plogging League Berlin", layout="wide")
-# Google Search Console verification
+# Google Search Console verification - inject into head
+st.components.v1.html(
+    """
+    <script>
+        var meta = document.createElement('meta');
+        meta.name = 'google-site-verification';
+        meta.content = 'TeZbWM0IZet0iuh5QZ26KSHwGCGIdx3oBHJ5tQPJNnE';
+        document.getElementsByTagName('head')[0].appendChild(meta);
+    </script>
+    """,
+    height=0
+)
+
 st.markdown(
     '<meta name="google-site-verification" content="TeZbWM0IZet0iuh5QZ26KSHwGCGIdx3oBHJ5tQPJNnE" />',
     unsafe_allow_html=True
